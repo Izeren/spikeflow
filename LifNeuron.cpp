@@ -15,7 +15,13 @@ void LifNeuron::UpdatePotential(int time, float potential) {
         isConsistent = false;
     }
     float wDyn = GetWDyn(tOut, time, tRef);
-    float leackyFactor = exp((tps - time) / tau);
+    float leackyFactor;
+    if ( tps < 0 ) {
+        leackyFactor = 1;
+    } else {
+        leackyFactor = exp((tps - time) / tau);
+    }
+
     v = v * leackyFactor + potential * wDyn;
     tps = time;
     spikeCounter += 1;
@@ -40,18 +46,15 @@ bool LifNeuron::IsConsistent() {
 
 bool LifNeuron::NormalizePotential(int time) {
     bool spikeStatus = false;
-    if ( v < -vMaxThresh ) {
+    if ( v < -vMaxThresh) {
         v = -vMaxThresh;
     } else {
         if ( v >= vMaxThresh ) {
             spikeStatus = true;
-            for ( auto synapse: outputSynapses ) {
-                synapse.x += exp((tOut - time - 1) / tau);
-            }
             if ( tOut >= 0 ) {
                 a += exp((tOut - time) / tau);
             } else {
-                a += exp((-time) / tau);
+                a += 1;
             }
             tOut = time;
             v -= vMaxThresh;
@@ -82,7 +85,7 @@ void LifNeuron::Backward(float sumA) {
         synapse.DaDx = ( synapse.strength + sigma_mu * totalStrength / (1 - sigma_mu * (n - 1) )
                 ) / (1 + sigma_mu) / VMaxNext;
         grad += synapse.DaDx * synapse.next->grad;
-        synapse.DlDw = synapse.next->grad * synapse.x / VMaxNext;
+        synapse.DlDw = synapse.next->grad * a / exp (1 / tau) / VMaxNext;
     }
     DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
 
