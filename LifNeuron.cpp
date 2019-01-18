@@ -20,12 +20,16 @@ void LifNeuron::UpdatePotential(int time, float potential) {
     tps = time;
 }
 
-LifNeuron::LifNeuron( const std::vector<Synapse *> &outputSynapses, float v, float a, float vMinThresh,
+LifNeuron::LifNeuron( const std::vector<Synapse> &outputSynapses, float v, float a, float vMinThresh,
                       float vMaxThresh, float tau, float tps, float tOut, float tRef, bool isConsistent )
         : outputSynapses( outputSynapses ), v( v ), a( a ), vMinThresh( vMinThresh ), vMaxThresh( vMaxThresh ),
-          tau( tau ), tps( tps ), tOut( tOut ), tRef( tRef ), isConsistent( isConsistent ) {}
+          tau( tau ), tps( tps ), tOut( tOut ), tRef( tRef ), isConsistent( isConsistent ) {
+    grad=0;
+    sigma_mu=0.25;
+    DlDV = 0;
+}
 
-const std::vector<Synapse *> &LifNeuron::GetOutputSynapses() const {
+const std::vector<Synapse> &LifNeuron::GetOutputSynapses() const {
     return outputSynapses;
 }
 
@@ -41,7 +45,7 @@ bool LifNeuron::NormalizePotential(int time) {
         if ( v >= vMaxThresh ) {
             spikeStatus = true;
             for ( auto synapse: outputSynapses ) {
-                synapse->IncreaseX(exp((tOut - time - 1) / tau));
+                synapse.x += exp((tOut - time - 1) / tau);
             }
             if ( tOut >= 0 ) {
                 a += exp((tOut - time) / tau);
@@ -56,6 +60,45 @@ bool LifNeuron::NormalizePotential(int time) {
     return spikeStatus;
 }
 
-void LifNeuron::AddSynapse( Synapse *synapse ) {
+void LifNeuron::AddSynapse( const Synapse &synapse ) {
     outputSynapses.push_back( synapse );
+}
+
+void LifNeuron::Backward(float sumA) {
+    float totalStrength = 0;
+    size_t n = outputSynapses.size();
+    for ( auto synapse: outputSynapses ) {
+        if ( synapse.updatable ) {
+            totalStrength += synapse.strength;
+        }
+    }
+    grad = 0;
+    for ( auto synapse: outputSynapses ) {
+        if ( !(synapse.updatable) ) {
+            continue;
+        }
+        float VMaxNext = synapse.next->vMaxThresh;
+        synapse.DaDx = ( synapse.strength + sigma_mu * totalStrength / (1 - sigma_mu * (n - 1) )
+                ) / (1 + sigma_mu) / VMaxNext;
+        grad += synapse.DaDx * synapse.next->grad;
+        synapse.DlDw = synapse.next->grad * synapse.x / VMaxNext;
+    }
+    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
+
+}
+
+LifNeuron::LifNeuron() {
+    outputSynapses = std::vector<Synapse>();
+    v = 0;
+    a= 0;
+    vMinThresh = -5;
+    vMaxThresh = 10;
+    tau = 2;
+    tps = -1;
+    tOut = -1;
+    tRef = 2;
+    isConsistent = true;
+    grad = 0;
+    sigma_mu = 0.25;
+    DlDV = 0;
 }

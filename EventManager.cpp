@@ -11,20 +11,21 @@ void EventManager::RunSimulation() {
     for ( Time time = 0; time < simulationTime; time++ ) {
         for ( Event event: eventsTimeline[time] ) {
             eventCounter += 1;
-            auto synapses = event->GetOutputSynapses();
-            for ( const Synapse *synapse: synapses ) {
-                LifNeuron& next = synapse->GetNext();
-                if ( next.IsConsistent() ) {
-                    validationTimeline[time].push_back(&next);
+            auto synapses = event->outputSynapses;
+            for ( int synapseId = 0; synapseId < synapses.size(); synapseId++ ) {
+                LifNeuron *next = synapses[synapseId].next;
+                if ( next->IsConsistent() ) {
+                    validationTimeline[time].push_back(next);
                 }
-                next.UpdatePotential(time, synapse->GetStrength());
+                next->UpdatePotential(time, synapses[synapseId].strength);
             }
         }
         for ( ValidationCandidate candidate: validationTimeline[time] ) {
             bool isActive = candidate->NormalizePotential(time);
             if ( isActive ) {
-                if ( time + 1 < simulationTime ) {}
-                RegisterSpikeEvent(candidate, time + 1);
+                if ( time + 1 < simulationTime ) {
+                    RegisterSpikeEvent( candidate, time + 1 );
+                }
             }
         }
     }

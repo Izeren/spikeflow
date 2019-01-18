@@ -7,16 +7,15 @@ typedef std::vector<Synapse> SynapseList;
 
 class Synapse {
 public:
-    Synapse( bool updatable, float strength, float x, LifNeuron &previous, LifNeuron &next );
-    LifNeuron &GetNext() const;
-    float GetStrength() const;
-    void IncreaseX(float delta);
+    Synapse( bool updatable, float strength, float x, LifNeuron *previous, LifNeuron *next );
+    Synapse();
 
-private:
     bool updatable;
     float strength;
     float x;
-    LifNeuron& previous;
-    LifNeuron& next;
+    float DaDx;
+    float DlDw;
+    LifNeuron *previous;
+    LifNeuron *next;
 
 };

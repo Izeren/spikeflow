@@ -3,19 +3,18 @@
 
 
 Synapse::Synapse( bool updatable, float strength, float x,
-        LifNeuron &previous, LifNeuron &next ) :
+        LifNeuron *previous, LifNeuron *next ) :
         updatable( updatable ), strength( strength ), x ( x ),
         previous( previous ),
-        next( next ) {}
-
-LifNeuron &Synapse::GetNext() const {
-    return next;
+        next( next ) {
+    DaDx = 0;
+    DlDw = 0;
 }
 
-float Synapse::GetStrength() const {
-    return strength;
-}
-
-void Synapse::IncreaseX( float delta ) {
-    x += delta;
+Synapse::Synapse() {
+    previous = NULL;
+    next = NULL;
+    updatable = true;
+    strength = 5;
+    x = 0;
 }

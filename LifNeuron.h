@@ -8,15 +8,18 @@ class LifNeuron {
 public:
     void UpdatePotential(int time, float potential);
 
-    LifNeuron( const std::vector<Synapse *> &outputSynapses, float v, float a, float vMinThresh,
+    LifNeuron( const std::vector<Synapse> &outputSynapses, float v, float a, float vMinThresh,
                float vMaxThresh, float tau, float tps, float tOut, float tRef, bool isConsistent );
-    const std::vector<Synapse *> &GetOutputSynapses() const;
+
+    LifNeuron();
+
+    const std::vector<Synapse> &GetOutputSynapses() const;
     bool IsConsistent();
     bool NormalizePotential(int time);
-    void AddSynapse(Synapse *synapse);
+    void AddSynapse(const Synapse &synapse);
+    void Backward(float sumA);
 
-private:
-    std::vector<Synapse *> outputSynapses;
+    std::vector<Synapse> outputSynapses;
     float v;
     float a;
     float vMinThresh;
@@ -26,6 +29,10 @@ private:
     float tOut;
     float tRef;
     bool isConsistent;
+    float grad;
+    float sigma_mu;
+    float DlDV;
 
+private:
     float GetWDyn(float tOut, float tp, float tRef);
 };
