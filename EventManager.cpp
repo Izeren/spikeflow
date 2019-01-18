@@ -12,9 +12,14 @@ void EventManager::RunSimulation() {
         for ( Event event: eventsTimeline[time] ) {
             eventCounter += 1;
             auto synapses = event->outputSynapses;
+            if ( event->v > event->vMaxThresh ) {
+                if ( time + 1 < simulationTime ) {
+                    RegisterSpikeEvent( event, time + 1);
+                }
+            }
             for ( int synapseId = 0; synapseId < synapses.size(); synapseId++ ) {
                 LifNeuron *next = synapses[synapseId].next;
-                if ( next->IsConsistent() ) {
+                if ( next->IsConsistent()) {
                     validationTimeline[time].push_back(next);
                 }
                 next->UpdatePotential(time, synapses[synapseId].strength);

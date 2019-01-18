@@ -15,6 +15,6 @@ Synapse::Synapse() {
     previous = NULL;
     next = NULL;
     updatable = true;
-    strength = 5;
+    strength = 1;
     x = 0;
 }

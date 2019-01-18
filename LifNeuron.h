@@ -7,6 +7,7 @@ class Synapse;
 class LifNeuron {
 public:
     void UpdatePotential(int time, float potential);
+    void Reset();
 
     LifNeuron( const std::vector<Synapse> &outputSynapses, float v, float a, float vMinThresh,
                float vMaxThresh, float tau, float tps, float tOut, float tRef, bool isConsistent );
@@ -22,7 +23,6 @@ public:
     std::vector<Synapse> outputSynapses;
     float v;
     float a;
-    float vMinThresh;
     float vMaxThresh;
     float tau;
     float tps;
@@ -32,6 +32,7 @@ public:
     float grad;
     float sigma_mu;
     float DlDV;
+    int spikeCounter;
 
 private:
     float GetWDyn(float tOut, float tp, float tRef);

@@ -18,11 +18,12 @@ void LifNeuron::UpdatePotential(int time, float potential) {
     float leackyFactor = exp((tps - time) / tau);
     v = v * leackyFactor + potential * wDyn;
     tps = time;
+    spikeCounter += 1;
 }
 
 LifNeuron::LifNeuron( const std::vector<Synapse> &outputSynapses, float v, float a, float vMinThresh,
                       float vMaxThresh, float tau, float tps, float tOut, float tRef, bool isConsistent )
-        : outputSynapses( outputSynapses ), v( v ), a( a ), vMinThresh( vMinThresh ), vMaxThresh( vMaxThresh ),
+        : outputSynapses( outputSynapses ), v( v ), a( a ), vMaxThresh( vMaxThresh ),
           tau( tau ), tps( tps ), tOut( tOut ), tRef( tRef ), isConsistent( isConsistent ) {
     grad=0;
     sigma_mu=0.25;
@@ -39,8 +40,8 @@ bool LifNeuron::IsConsistent() {
 
 bool LifNeuron::NormalizePotential(int time) {
     bool spikeStatus = false;
-    if ( v < vMinThresh ) {
-        v = vMinThresh;
+    if ( v < -vMaxThresh ) {
+        v = -vMaxThresh;
     } else {
         if ( v >= vMaxThresh ) {
             spikeStatus = true;
@@ -53,7 +54,7 @@ bool LifNeuron::NormalizePotential(int time) {
                 a += exp((-time) / tau);
             }
             tOut = time;
-            while ( v >= vMaxThresh ) { v -= vMaxThresh; }
+            v -= vMaxThresh;
         }
     }
     isConsistent = true;
@@ -91,14 +92,25 @@ LifNeuron::LifNeuron() {
     outputSynapses = std::vector<Synapse>();
     v = 0;
     a= 0;
-    vMinThresh = -5;
     vMaxThresh = 10;
-    tau = 2;
+    tau = 20;
     tps = -1;
     tOut = -1;
-    tRef = 2;
+    tRef = 1;
     isConsistent = true;
     grad = 0;
-    sigma_mu = 0.25;
+    sigma_mu = 0;
     DlDV = 0;
+    spikeCounter = 0;
+}
+
+void LifNeuron::Reset() {
+    v = 0;
+    a = 0;
+    tps = -1;
+    tOut = -1;
+    isConsistent = true;
+    grad = 0;
+    DlDV = 0;
+    spikeCounter = 0;
 }
