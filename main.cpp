@@ -294,9 +294,10 @@ void GradStep( Layer &layer, float learningRate ) {
         if ( neuron.get()->vMaxThresh < 0 ) {
             neuron.get()->vMaxThresh = 0.001;
         }
-        for ( auto synapse: neuron.get()->outputSynapses ) {
-            if ( synapse.updatable ) {
-                synapse.strength -= synapse.DlDw * learningRate;
+        std::vector<Synapse> &synapses = neuron.get()->outputSynapses;
+        for ( int synapseId = 0; synapseId < synapses.size(); synapseId++ ) {
+            if ( synapses[synapseId].updatable ) {
+                synapses[synapseId].strength -= synapses[synapseId].DlDw * learningRate;
             }
         }
     }
