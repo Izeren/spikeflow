@@ -26,7 +26,9 @@ const int INPUT_SIZE = 4;
 const int HIDDEN1_SIZE = 10;
 const int HIDDEN2_SIZE = 10;
 const int OUTPUT_SIZE = 3;
-const float LEARNING_RATE = 0.001;
+const float LEARNING_RATE_W = 0.001;
+const float LEARNING_RATE_V = 0.01;
+
 
 
 
@@ -42,7 +44,7 @@ void RelaxInputLayer( Layer &layer);
 void InitLayer( Layer &layer, int size, int nextLayerSize );
 
 
-void GradStep( Layer &layer, float learningRate );
+void GradStep( Layer &layer, float learningRateW, float learningRateV );
 int RegisterSample( SpikeTrain &sample, EventManager &manager, Layer &input);
 void ResetLayer( Layer &layer );
 
@@ -116,10 +118,10 @@ int main() {
             RelaxLayer( hidden1, HIDDEN1_SIZE );
             RelaxInputLayer( inputLayer );
 
-            GradStep( output, LEARNING_RATE );
-            GradStep( hidden2, LEARNING_RATE );
-            GradStep( hidden1, LEARNING_RATE );
-            GradStep( inputLayer, LEARNING_RATE );
+            GradStep( output, LEARNING_RATE_W, LEARNING_RATE_V );
+            GradStep( hidden2, LEARNING_RATE_W, LEARNING_RATE_V );
+            GradStep( hidden1, LEARNING_RATE_W, LEARNING_RATE_V );
+            GradStep( inputLayer, LEARNING_RATE_W, LEARNING_RATE_V );
 
             ResetLayer( output );
             ResetLayer( hidden2 );
@@ -288,16 +290,33 @@ void ReadData( const std::string &path, Dataset& data, int inputSize, int simula
     }
 }
 
-void GradStep( Layer &layer, float learningRate ) {
+void GradStep( Layer &layer, float learningRateW, float learningRateV) {
+    int N = layer.size(), M = 0, m = 0;
     for ( auto neuron: layer ) {
-        neuron.get()->vMaxThresh -= neuron.get()->DlDV * learningRate;
+        for ( auto synapse: neuron.get()->outputSynapses ) {
+            if ( synapse.updatable ) {
+                if ( neuron.get()->a > 0 ) {
+                    m += 1;
+                }
+                M += 1;
+            }
+        }
+    }
+    if ( m == 0 ) {
+        m = 1;
+    }
+    if ( M == 0 ) {
+        M = 1;
+    }
+    for ( auto neuron: layer ) {
+        neuron.get()->vMaxThresh -= neuron.get()->DlDV * learningRateV * sqrt(N / M / m);
         if ( neuron.get()->vMaxThresh < 0 ) {
             neuron.get()->vMaxThresh = 0.001;
         }
         std::vector<Synapse> &synapses = neuron.get()->outputSynapses;
         for ( int synapseId = 0; synapseId < synapses.size(); synapseId++ ) {
             if ( synapses[synapseId].updatable ) {
-                synapses[synapseId].strength -= synapses[synapseId].DlDw * learningRate;
+                synapses[synapseId].strength -= synapses[synapseId].DlDw * learningRateW * sqrt(N / m);
             }
         }
     }
