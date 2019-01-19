@@ -23,11 +23,14 @@ typedef struct {
 } Dataset;
 
 const int INPUT_SIZE = 4;
-const int HIDDEN1_SIZE = 10;
-const int HIDDEN2_SIZE = 10;
+const int HIDDEN1_SIZE = 30;
+const int HIDDEN2_SIZE = 30;
 const int OUTPUT_SIZE = 3;
-const float LEARNING_RATE_W = 0.001;
-const float LEARNING_RATE_V = 0.01;
+const float LEARNING_RATE_W = 0.002;
+const float LEARNING_RATE_V = 0.0003;
+const float BETA = 10;
+const float LAMBDA = 0.008;
+
 
 
 
@@ -174,7 +177,7 @@ void createSynapses(Layer &layer1, Layer &layer2,
                     int size1, int size2) {
     std::default_random_engine generator;
     generator.seed( clock() );
-    float limit = sqrt( 3. / (  size2 ) );
+    float limit = sqrt( 3. / (  size1 * size2 ) );
     std::uniform_real_distribution<float> distribution( -limit, limit );
 
     for (int prevId = 0; prevId < size1; prevId++) {
@@ -291,32 +294,42 @@ void ReadData( const std::string &path, Dataset& data, int inputSize, int simula
 }
 
 void GradStep( Layer &layer, float learningRateW, float learningRateV) {
-    int N = layer.size(), M = 0, m = 0;
+    float N = layer.size(), M = 0, m = 0;
+//    int N2 = layer[0].get()->outputSynapses.size();
+//    if ( N2 == 0 ) {
+//        N2 = 1;
+//    }
+    float S = 0;
     for ( auto neuron: layer ) {
         for ( auto synapse: neuron.get()->outputSynapses ) {
             if ( synapse.updatable ) {
                 if ( neuron.get()->a > 0 ) {
                     m += 1;
+                    S += synapse.strength * synapse.strength;
                 }
                 M += 1;
             }
         }
     }
+    S = BETA * (S - 1);
+    float F = exp(S);
     if ( m == 0 ) {
         m = 1;
     }
     if ( M == 0 ) {
         M = 1;
     }
+//    int M = 1, N = 1, m = 1;
     for ( auto neuron: layer ) {
-        neuron.get()->vMaxThresh -= neuron.get()->DlDV * learningRateV * sqrt(N / M / m);
+        neuron.get()->vMaxThresh -= neuron.get()->DlDV * learningRateV; //* sqrt(N / M / m);
         if ( neuron.get()->vMaxThresh < 0 ) {
             neuron.get()->vMaxThresh = 0.001;
         }
         std::vector<Synapse> &synapses = neuron.get()->outputSynapses;
         for ( int synapseId = 0; synapseId < synapses.size(); synapseId++ ) {
             if ( synapses[synapseId].updatable ) {
-                synapses[synapseId].strength -= synapses[synapseId].DlDw * learningRateW * sqrt(N / m);
+                synapses[synapseId].strength -= synapses[synapseId].DlDw * learningRateW;// * sqrt(N / m);
+                synapses[synapseId].strength -= BETA * LAMBDA * synapses[synapseId].strength * F;
             }
         }
     }
