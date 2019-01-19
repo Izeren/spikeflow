@@ -77,17 +77,16 @@ void LifNeuron::Backward(float sumA) {
         }
     }
     grad = 0;
-    for ( auto synapse: outputSynapses ) {
-        if ( !(synapse.updatable) ) {
+    for ( int synapseId = 0; synapseId < outputSynapses.size(); synapseId++ ) {
+        if ( !(outputSynapses[synapseId].updatable) ) {
             continue;
         }
-        float VMaxNext = synapse.next->vMaxThresh;
-        synapse.DaDx = ( synapse.strength + sigma_mu * totalStrength / (1 - sigma_mu * (n - 1) )
-                ) / (1 + sigma_mu) / VMaxNext;
-        grad += synapse.DaDx * synapse.next->grad;
-        synapse.DlDw = synapse.next->grad * a / exp (1 / tau) / VMaxNext;
+        outputSynapses[synapseId].DaDx = ( outputSynapses[synapseId].strength + sigma_mu * totalStrength / (1 - sigma_mu * (n - 1) )
+                ) / (1 + sigma_mu);
+        grad += outputSynapses[synapseId].DaDx * outputSynapses[synapseId].next->grad / vMaxThresh;
+        outputSynapses[synapseId].DlDw = outputSynapses[synapseId].next->grad * a / exp (1 / tau);
     }
-    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
+    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA);
 
 }
 
@@ -102,7 +101,7 @@ LifNeuron::LifNeuron() {
     tRef = 1;
     isConsistent = true;
     grad = 0;
-    sigma_mu = 0;
+    sigma_mu = 0.025;
     DlDV = 0;
     spikeCounter = 0;
 }

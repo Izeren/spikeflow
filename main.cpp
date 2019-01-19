@@ -49,6 +49,8 @@ void ResetLayer( Layer &layer );
 float SoftMaxLoss( Layer &outputLayer, const Target &target,
                    std::vector<float> &softMax, std::vector<float> &deltas, float *S);
 
+template <class T> int Argmax( const std::vector<T> &vector );
+
 int main() {
 
     Layer inputLayer;
@@ -65,7 +67,19 @@ int main() {
     createSynapses(hidden2, output, HIDDEN2_SIZE, OUTPUT_SIZE);
 //    createLaterInibitionSynapses(hidden1, HIDDEN1_SIZE);
 //    createLaterInibitionSynapses(hidden2, HIDDEN2_SIZE);
-//    createLaterInibitionSynapses(output, OUTPUT_SIZE);
+    for ( int neuronId = 0; neuronId < OUTPUT_SIZE; neuronId++ ) {
+        output[neuronId].get()->sigma_mu = 0;
+    }
+    for ( int neuronId = 0; neuronId < INPUT_SIZE; neuronId++ ) {
+        inputLayer[neuronId].get()->sigma_mu = 0;
+    }
+    for ( int neuronId = 0; neuronId < HIDDEN1_SIZE; neuronId++ ) {
+        hidden1[neuronId].get()->sigma_mu = 0;
+    }
+    for ( int neuronId = 0; neuronId < HIDDEN2_SIZE; neuronId++ ) {
+        hidden2[neuronId].get()->sigma_mu = 0;
+    }
+
 
     Dataset data;
     ReadData("/home/izeren/projects/snn_projects/brian2_tests/data/bindsnet/iris.data", data, INPUT_SIZE, 50);
@@ -90,10 +104,12 @@ int main() {
             std::vector<float> deltas(OUTPUT_SIZE, 0);
             float loss = SoftMaxLoss( output, target, softMax, deltas, &S );
             totalTrainLoss += loss;
-//            int res = output[0].get()->a > output[1].get()->a;
-//            if ( res == data.yTrain[sampleId] ) {
-//                train_good_counter += 1;
-//            }
+            int res = Argmax(softMax);
+//            std::cout << softMax[0] << " " << softMax[1] << " " << softMax[2] << "\n";
+            if ( res == data.yTrain[sampleId] ) {
+                train_good_counter += 1;
+            }
+//            std::cout << res << " " << data.yTrain[sampleId] << "\n";
 
             RelaxOutputLayer( output, target, OUTPUT_SIZE );
             RelaxLayer( hidden2, HIDDEN2_SIZE );
@@ -131,11 +147,11 @@ int main() {
             float loss = SoftMaxLoss( output, target, softMax, deltas, &S );
             totalTestLoss += loss;
 //
-//            int res = output[0].get()->a > output[1].get()->a;
-//            std::cout << output[0].get()->a << " " << output[1].get()->a << "\n";
-//            if ( res == t ) {
-//                test_good_counter += 1;
-//            }
+            int res = Argmax(softMax);
+//            std::cout << softMax[0] << " " << softMax[1] << " " << softMax[2] << "\n";
+            if ( res == t ) {
+                test_good_counter += 1;
+            }
 //            std::cout << res << " " << t << "\n";
             ResetLayer( output );
             ResetLayer( hidden2 );
@@ -211,12 +227,13 @@ void RelaxOutputLayer( Layer &outputLayer, const Target &target, int size ) {
     std::vector<float> deltas(size, 0);
     SoftMaxLoss( outputLayer, target, softMax, deltas, &S );
     for ( int softMaxId = 0; softMaxId < size; softMaxId++ ) {
-        outputLayer[softMaxId].get()->grad = softMax[softMaxId] * (deltas[softMaxId] - S);
+        outputLayer[softMaxId].get()->grad = softMax[softMaxId] *
+                (deltas[softMaxId] - S) / outputLayer[softMaxId].get()->vMaxThresh;
         Sa += outputLayer[softMaxId].get()->a;
     }
     for ( int neuronId = 0; neuronId < size; neuronId++ ) {
         LifNeuron *n = outputLayer[neuronId].get();
-        n->DlDV = n->grad * (-(1 + n->sigma_mu) * n->a / exp( 1 / n->tau ) + n->sigma_mu * Sa) / n->vMaxThresh;
+        n->DlDV = n->grad * (-(1 + n->sigma_mu) * n->a / exp( 1 / n->tau ) + n->sigma_mu * Sa);
     }
 }
 
@@ -224,6 +241,8 @@ void RelaxLayer( Layer &layer, int size ) {
     float Sa = 0;
     for ( auto neuron: layer ) {
         Sa += neuron.get()->a;
+    }
+    for ( auto neuron: layer ) {
         neuron.get()->Backward(Sa);
     }
 }
@@ -315,4 +334,14 @@ void ResetLayer( Layer &layer ) {
     for ( auto neuron: layer ) {
         neuron.get()->Reset();
     }
+}
+
+template <class T> int Argmax( const std::vector<T> &vector ) {
+    int maxId = 0;
+    for ( int index = 0; index < vector.size(); index++ ) {
+        if ( vector[index] > vector[maxId]) {
+            maxId = index;
+        }
+    }
+    return maxId;
 }
