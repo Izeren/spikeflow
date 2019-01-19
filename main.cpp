@@ -22,12 +22,12 @@ typedef struct {
     std::vector<float> yTest;
 } Dataset;
 
-const int INPUT_SIZE = 4;
-const int HIDDEN1_SIZE = 30;
-const int HIDDEN2_SIZE = 30;
-const int OUTPUT_SIZE = 3;
-const float LEARNING_RATE_W = 0.002;
-const float LEARNING_RATE_V = 0.0003;
+const int INPUT_SIZE = 784;
+const int HIDDEN1_SIZE = 200;
+const int HIDDEN2_SIZE = 50;
+const int OUTPUT_SIZE = 10;
+const float LEARNING_RATE_W = 0.001;
+const float LEARNING_RATE_V = 0.0001;
 const float BETA = 10;
 const float LAMBDA = 0.008;
 
@@ -87,7 +87,7 @@ int main() {
 
 
     Dataset data;
-    ReadData("/home/izeren/projects/snn_projects/brian2_tests/data/bindsnet/iris.data", data, INPUT_SIZE, 50);
+    ReadData("/home/izeren/projects/snn_projects/brian2_tests/data/bindsnet/mnist.data", data, INPUT_SIZE, 50);
 
     for ( int epochId = 0; epochId < 3000; epochId++ ) {
         float train_good_counter = 0;
@@ -351,7 +351,7 @@ int RegisterSample( SpikeTrain &sample, EventManager &manager, Layer &input) {
 void InitLayer( Layer &layer, int size, int nextLayerSize ) {
     float limit;
     if ( nextLayerSize ) {
-        limit = 1 * sqrt(3. / nextLayerSize );
+        limit = 0.2 * sqrt(3. / nextLayerSize );
     } else {
         limit = 1;
     }
