@@ -391,6 +391,9 @@ template <class T> int Argmax( const std::vector<T> &vector ) {
 }
 
 void TestForward() {
+
+    float EPS = 1e-4;
+
     Layer inputLayer;
     InitLayer( inputLayer, 1, 1 );
     Layer hidden1;
@@ -421,9 +424,11 @@ void TestForward() {
             eventManager.RunSimulation();
             output.back().get()->RelaxOutput(49);
             float activityDelta = abs(output.back().get()->a - targetActivity.expectedOutput[sampleId]);
-
-            std::cout << activityDelta << "\n";
-
+            if ( activityDelta < EPS ) {
+                std::cout << "Forward test " << sampleId << " Sucsessfully passed, status: OK\n";
+            } else {
+                std::cout << "Forward test " << sampleId << " Failed, status: Failed\n";
+            }
 
             ResetLayer( output );
             ResetLayer( hidden1 );
@@ -452,7 +457,7 @@ void GenerateTestData( Dataset &data, Activity &targetActivity ) {
     }
     for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
         for ( int neuronId = 0; neuronId < inputSize; neuronId++ ) {
-            data.xTrain[2][timeId][neuronId] = timeId % 3;
+            data.xTrain[2][timeId][neuronId] = (timeId % 3 == 0);
         }
     }
     for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
@@ -462,7 +467,7 @@ void GenerateTestData( Dataset &data, Activity &targetActivity ) {
     }
     targetActivity.expectedOutput = std::vector<float>(4);
     targetActivity.expectedOutput[0] = 3.17442;
-    targetActivity.expectedOutput[1] = 0;
-    targetActivity.expectedOutput[2] = 0;
+    targetActivity.expectedOutput[1] = 2.36357;
+    targetActivity.expectedOutput[2] = 1.67968;
     targetActivity.expectedOutput[3] = 0;
 }
