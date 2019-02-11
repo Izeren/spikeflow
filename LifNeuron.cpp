@@ -1,11 +1,12 @@
 #include "LifNeuron.h"
 #include "Synapse.h"
+#include <iostream>
 
 float LifNeuron::GetWDyn(float tOut, float tp, float tRef) {
     if (tOut < 0 || tp < 0 || tRef < 0 || tp - tOut >= tRef) {
         return 1;
     } else {
-        return (tp - tOut) * (tp - tOut) / tRef;
+        return (tp - tOut) * (tp - tOut) / tRef / tRef;
     }
 }
 
@@ -23,6 +24,7 @@ void LifNeuron::UpdatePotential(int time, float potential) {
     }
 
     v = v * leackyFactor + potential * wDyn;
+//    std::cout << tOut << " " << time << " " << tRef << " " << wDyn << " wdyn \n";
     tps = time;
     spikeCounter += 1;
 }
@@ -51,11 +53,7 @@ bool LifNeuron::NormalizePotential(int time) {
     } else {
         if ( v >= vMaxThresh ) {
             spikeStatus = true;
-            if ( tOut >= 0 ) {
-                a += exp((tOut - time) / tau);
-            } else {
-                a += 1;
-            }
+            RelaxOutput( time, true );
             tOut = time;
             v -= vMaxThresh;
         }
@@ -73,7 +71,7 @@ void LifNeuron::Backward(float sumA) {
     size_t n = outputSynapses.size();
     for ( auto synapse: outputSynapses ) {
         if ( synapse.updatable ) {
-            totalStrength += synapse.strength;
+            totalStrength += synapse.strength / synapse.next->vMaxThresh;
         }
     }
     grad = 0;
@@ -83,10 +81,10 @@ void LifNeuron::Backward(float sumA) {
         }
         outputSynapses[synapseId].DaDx = ( outputSynapses[synapseId].strength + sigma_mu * totalStrength / (1 - sigma_mu * (n - 1) )
                 ) / (1 + sigma_mu);
-        grad += outputSynapses[synapseId].DaDx * outputSynapses[synapseId].next->grad / vMaxThresh;
-        outputSynapses[synapseId].DlDw = outputSynapses[synapseId].next->grad * a / exp (1 / tau);
+        grad += outputSynapses[synapseId].DaDx * outputSynapses[synapseId].next->grad;
+        outputSynapses[synapseId].DlDw = outputSynapses[synapseId].next->grad * a / exp (1 / tau) / outputSynapses[synapseId].next->vMaxThresh;
     }
-    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA);
+    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
 
 }
 
@@ -98,7 +96,7 @@ LifNeuron::LifNeuron() {
     tau = 20;
     tps = -1;
     tOut = -1;
-    tRef = 1;
+    tRef = 3;
     isConsistent = true;
     grad = 0;
     sigma_mu = 0.025;
@@ -115,4 +113,12 @@ void LifNeuron::Reset() {
     grad = 0;
     DlDV = 0;
     spikeCounter = 0;
+}
+
+void LifNeuron::RelaxOutput( int time, bool withSpike) {
+    if ( tOut >= 0 ) {
+        a = a * exp((tOut - time) / tau) + withSpike;
+    } else {
+        a = withSpike;
+    }
 }

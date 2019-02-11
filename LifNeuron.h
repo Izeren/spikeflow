@@ -19,6 +19,7 @@ public:
     bool NormalizePotential(int time);
     void AddSynapse(const Synapse &synapse);
     void Backward(float sumA);
+    void RelaxOutput( int time, bool withSpike=false );
 
     std::vector<Synapse> outputSynapses;
     float v;
