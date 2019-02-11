@@ -81,8 +81,8 @@ void LifNeuron::Backward(float sumA) {
         }
         outputSynapses[synapseId].DaDx = ( outputSynapses[synapseId].strength + sigma_mu * totalStrength / (1 - sigma_mu * (n - 1) )
                 ) / (1 + sigma_mu);
-        grad += outputSynapses[synapseId].DaDx * outputSynapses[synapseId].next->grad;
-        outputSynapses[synapseId].DlDw = outputSynapses[synapseId].next->grad * a / exp (1 / tau) / outputSynapses[synapseId].next->vMaxThresh;
+        grad += outputSynapses[synapseId].next->grad * outputSynapses[synapseId].strength / vMaxThresh;
+        outputSynapses[synapseId].DlDw = outputSynapses[synapseId].next->grad * a / exp (1 / tau);
     }
     DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
 

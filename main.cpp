@@ -26,11 +26,11 @@ typedef struct {
     std::vector<float> expectedOutput;
 } Activity;
 
-const int INPUT_SIZE = 4;
-const int HIDDEN1_SIZE = 10;
-const int HIDDEN2_SIZE = 10;
+const int INPUT_SIZE = 2;
+const int HIDDEN1_SIZE = 2;
+const int HIDDEN2_SIZE = 1;
 const int OUTPUT_SIZE = 2;
-const float LEARNING_RATE_W = 0.00001;
+const float LEARNING_RATE_W = 0.0001;
 const float LEARNING_RATE_V = 0.0;
 const float BETA = 10;
 const float LAMBDA = 0.008;
@@ -61,11 +61,13 @@ float SoftMaxLoss( Layer &outputLayer, const Target &target,
 template <class T> int Argmax( const std::vector<T> &vector );
 
 void GenerateTestData(Dataset &data, Activity &targetActivity);
+void GenerateBackPropTestData( Dataset &data, Activity &targetActivity );
 void TestForward();
 void TestBackProp();
 
 int main() {
-    TestForward();
+//    TestForward();
+    TestBackProp();
 
 //    Layer inputLayer;
 //    InitLayer( inputLayer, INPUT_SIZE, HIDDEN1_SIZE );
@@ -186,8 +188,8 @@ void createSynapses(Layer &layer1, Layer &layer2,
                     int size1, int size2) {
     std::default_random_engine generator;
     generator.seed( clock() );
-    float limit = sqrt( 3. / (  size1 * size2 ) );
-    std::uniform_real_distribution<float> distribution( -limit, limit );
+    float limit = sqrt( 10. / (  size1 * size2 ) );
+    std::uniform_real_distribution<float> distribution( 0, limit );
 
     for (int prevId = 0; prevId < size1; prevId++) {
         for (int nextId = 0; nextId < size2; nextId++) {
@@ -353,6 +355,7 @@ int RegisterSample( SpikeTrain &sample, EventManager &manager, Layer &input) {
             if ( sample[tick][neuronId] ) {
                 manager.RegisterSpikeEvent( input[neuronId].get(), tick );
                 sampleSize += 1;
+                input[neuronId].get()->RelaxOutput( tick, true );
             }
         }
     }
@@ -438,7 +441,89 @@ void TestForward() {
 }
 
 void TestBackProp() {
+    Layer inputLayer;
+    InitLayer( inputLayer, 2, 2 );
+    Layer hidden1;
+    InitLayer( hidden1, 2, 2 );
+    Layer output;
+    InitLayer( output, 2, 0);
 
+    createSynapses(inputLayer, hidden1, 2, 2);
+    createSynapses(hidden1, output, 2, 2);
+    for ( int neuronId = 0; neuronId < OUTPUT_SIZE; neuronId++ ) {
+        output[neuronId].get()->sigma_mu = 0;
+    }
+    for ( int neuronId = 0; neuronId < INPUT_SIZE; neuronId++ ) {
+        inputLayer[neuronId].get()->sigma_mu = 0;
+    }
+    for ( int neuronId = 0; neuronId < HIDDEN1_SIZE; neuronId++ ) {
+        hidden1[neuronId].get()->sigma_mu = 0;
+    }
+
+    Dataset data;
+    Activity targetActivity;
+    GenerateBackPropTestData(data, targetActivity);
+
+    float EPS = 1e-4;
+    float LEARNING_RATE_W = 0.001;
+    float LEARNING_RATE_V = 0.0;
+
+    inputLayer[0].get()->outputSynapses[0].strength = 1;
+    inputLayer[0].get()->outputSynapses[1].strength = 0.5;
+    inputLayer[1].get()->outputSynapses[0].strength = 0;
+    inputLayer[1].get()->outputSynapses[1].strength = 1;
+
+    hidden1[0].get()->outputSynapses[0].strength = 1;
+    hidden1[0].get()->outputSynapses[1].strength = 0;
+    hidden1[1].get()->outputSynapses[0].strength = 0;
+    hidden1[1].get()->outputSynapses[1].strength = 1;
+
+    for ( int epochId = 0; epochId < 300; epochId++ ) {
+        for ( int sampleId = 0; sampleId < data.xTrain.size(); sampleId++ ) {
+            EventManager eventManager( 50 );
+            int sampleSize = RegisterSample( data.xTrain[sampleId], eventManager, inputLayer );
+            eventManager.RunSimulation();
+            Target target( 2, 0 );
+            target[0] = data.yTrain[sampleId];
+            target[1] = 1 - data.yTrain[sampleId];
+
+            RelaxOutputLayer( output, target, 2 );
+            RelaxLayer( hidden1, 2 );
+            RelaxInputLayer( inputLayer );
+
+            GradStep( output, LEARNING_RATE_W, LEARNING_RATE_V );
+            GradStep( hidden1, LEARNING_RATE_W, LEARNING_RATE_V );
+            GradStep( inputLayer, LEARNING_RATE_W, LEARNING_RATE_V );
+
+            float S = 0;
+            std::vector<float> softMax;
+            std::vector<float> deltas(OUTPUT_SIZE, 0);
+            float loss = SoftMaxLoss( output, target, softMax, deltas, &S );
+
+            float activityDelta = deltas[0];
+            if ( activityDelta < EPS ) {
+                std::cout << "Forward test " << sampleId << " Successfully passed, status: OK\n";
+            } else {
+                std::cout << "Forward test " << sampleId << " Failed, status: Failed\n";
+            }
+
+            ResetLayer( output );
+            ResetLayer( hidden1 );
+            ResetLayer( inputLayer );
+        }
+    }
+//    float averageDelta = 0;
+//    for ( int sampleId = 0; sampleId < data.xTrain.size(); sampleId++ ) {
+//        output.back().get()->RelaxOutput( 49 );
+//        float activityDelta = abs( output.back().get()->a - targetActivity.expectedOutput[sampleId] );
+//        averageDelta += activityDelta;
+//        if ( activityDelta < EPS ) {
+//            std::cout << "Forward test " << sampleId << " Successfully passed, status: OK\n";
+//        } else {
+//            std::cout << "Forward test " << sampleId << " Failed, status: Failed\n";
+//        }
+//    }
+//    averageDelta /= data.xTrain.size();
 }
 
 void GenerateTestData( Dataset &data, Activity &targetActivity ) {
@@ -470,4 +555,29 @@ void GenerateTestData( Dataset &data, Activity &targetActivity ) {
     targetActivity.expectedOutput[1] = 2.36357;
     targetActivity.expectedOutput[2] = 1.67968;
     targetActivity.expectedOutput[3] = 0;
+}
+
+void GenerateBackPropTestData( Dataset &data, Activity &targetActivity ) {
+    int simulationTime = 50;
+    int inputSize = 2;
+    data.xTrain = std::vector<SpikeTrain>(3, SpikeTrain(simulationTime, std::vector<int>(inputSize)));
+    for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
+        data.xTrain[0][timeId][0] = 1;
+    }
+    for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
+        data.xTrain[1][timeId][1] = 1;
+    }
+    for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
+        for ( int neuronId = 0; neuronId < inputSize; neuronId++ ) {
+            data.xTrain[2][timeId][neuronId] = 1;
+        }
+    }
+    data.yTrain = std::vector<float>(3);
+    data.yTrain[0] = 1;
+    data.yTrain[1] = 0;
+    data.yTrain[2] = 0.5;
+    targetActivity.expectedOutput = std::vector<float>(3);
+    targetActivity.expectedOutput[0] = 1;
+    targetActivity.expectedOutput[1] = 0;
+    targetActivity.expectedOutput[2] = 0.5;
 }
