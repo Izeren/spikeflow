@@ -54,7 +54,6 @@ bool LifNeuron::NormalizePotential(int time) {
         if ( v >= vMaxThresh ) {
             spikeStatus = true;
             RelaxOutput( time, true );
-            tOut = time;
             v -= vMaxThresh;
         }
     }
@@ -120,5 +119,8 @@ void LifNeuron::RelaxOutput( int time, bool withSpike) {
         a = a * exp((tOut - time) / tau) + withSpike;
     } else {
         a = withSpike;
+    }
+    if ( withSpike ) {
+        tOut = time;
     }
 }

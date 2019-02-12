@@ -67,7 +67,7 @@ void TestBackProp();
 
 int main() {
 //    TestForward();
-    TestBackProp();
+//    TestBackProp();
 
 //    Layer inputLayer;
 //    InitLayer( inputLayer, INPUT_SIZE, HIDDEN1_SIZE );
@@ -241,6 +241,9 @@ void RelaxOutputLayer( Layer &outputLayer, const Target &target, int size ) {
     float S = 0;
     std::vector<float> softMax;
     std::vector<float> deltas(size, 0);
+    for ( int neuronId = 0; neuronId < size; neuronId++ ) {
+        outputLayer[neuronId].get()->RelaxOutput(49);
+    }
     SoftMaxLoss( outputLayer, target, softMax, deltas, &S );
     for ( int softMaxId = 0; softMaxId < size; softMaxId++ ) {
         outputLayer[softMaxId].get()->grad = deltas[softMaxId];
@@ -342,6 +345,9 @@ void GradStep( Layer &layer, float learningRateW, float learningRateV) {
         for ( int synapseId = 0; synapseId < synapses.size(); synapseId++ ) {
             if ( synapses[synapseId].updatable ) {
                 synapses[synapseId].strength -= synapses[synapseId].DlDw * learningRateW;// * sqrt(N / m);
+                if ( synapses[synapseId].strength < 0 ) {
+                    synapses[synapseId].strength = 0;
+                }
 //                synapses[synapseId].strength -= BETA * LAMBDA * synapses[synapseId].strength * F;
             }
         }
@@ -428,7 +434,7 @@ void TestForward() {
             output.back().get()->RelaxOutput(49);
             float activityDelta = abs(output.back().get()->a - targetActivity.expectedOutput[sampleId]);
             if ( activityDelta < EPS ) {
-                std::cout << "Forward test " << sampleId << " Sucsessfully passed, status: OK\n";
+                std::cout << "Forward test " << sampleId << " Successfully passed, status: OK\n";
             } else {
                 std::cout << "Forward test " << sampleId << " Failed, status: Failed\n";
             }
@@ -464,21 +470,21 @@ void TestBackProp() {
     Activity targetActivity;
     GenerateBackPropTestData(data, targetActivity);
 
-    float EPS = 1e-4;
-    float LEARNING_RATE_W = 0.001;
+    float EPS = 1e-1;
+    float LEARNING_RATE_W = 0.01;
     float LEARNING_RATE_V = 0.0;
 
-    inputLayer[0].get()->outputSynapses[0].strength = 1;
-    inputLayer[0].get()->outputSynapses[1].strength = 0.5;
-    inputLayer[1].get()->outputSynapses[0].strength = 0;
-    inputLayer[1].get()->outputSynapses[1].strength = 1;
+//    inputLayer[0].get()->outputSynapses[0].strength = 1;
+//    inputLayer[0].get()->outputSynapses[1].strength = 0;
+//    inputLayer[1].get()->outputSynapses[0].strength = 0;
+//    inputLayer[1].get()->outputSynapses[1].strength = 1;
+//
+//    hidden1[0].get()->outputSynapses[0].strength = 0.01;
+//    hidden1[0].get()->outputSynapses[1].strength = 0.02;
+//    hidden1[1].get()->outputSynapses[0].strength = 0.03;
+//    hidden1[1].get()->outputSynapses[1].strength = 0.04;
 
-    hidden1[0].get()->outputSynapses[0].strength = 1;
-    hidden1[0].get()->outputSynapses[1].strength = 0;
-    hidden1[1].get()->outputSynapses[0].strength = 0;
-    hidden1[1].get()->outputSynapses[1].strength = 1;
-
-    for ( int epochId = 0; epochId < 300; epochId++ ) {
+    for ( int epochId = 0; epochId < 50; epochId++ ) {
         for ( int sampleId = 0; sampleId < data.xTrain.size(); sampleId++ ) {
             EventManager eventManager( 50 );
             int sampleSize = RegisterSample( data.xTrain[sampleId], eventManager, inputLayer );
