@@ -8,13 +8,14 @@
 #include <memory>
 #include <random>
 #include <time.h>
-
 #include <eigen3/Eigen/Dense>
+#include "MnistUtils.hpp"
 
 using Eigen::MatrixXd;
 typedef std::vector<std::shared_ptr<LifNeuron> > Layer;
 typedef std::vector<float> Target;
 typedef std::vector<std::vector<int > > SpikeTrain;
+
 typedef struct {
     std::vector<SpikeTrain> xTrain;
     std::vector<float> yTrain;
@@ -65,9 +66,24 @@ void GenerateBackPropTestData( Dataset &data, Activity &targetActivity );
 void TestForward();
 void TestBackProp();
 
+void GeneratePoissonSeries( std::vector<int> &data, int averageNumSpikes, int simulationTime=0 );
+
+template <class T> void PrintVector( const std::vector<T> &vector );
+
+
 int main() {
 //    TestForward();
 //    TestBackProp();
+
+    auto test = std::vector<int>(50);
+    PrintVector(test);
+    GeneratePoissonSeries(test, 10);
+    PrintVector(test);
+    MNIST::Dataset mnist;
+    MNIST::ReadMnist("/home/izeren/CLionProjects/SpikeProp/mnist_data", mnist);
+    std::cout << mnist.xTrain.size() << "\n";
+    PrintVector(mnist.xTrain[0]);
+    PrintVector(mnist.yTrain);
 
 //    Layer inputLayer;
 //    InitLayer( inputLayer, INPUT_SIZE, HIDDEN1_SIZE );
@@ -188,7 +204,7 @@ void createSynapses(Layer &layer1, Layer &layer2,
                     int size1, int size2) {
     std::default_random_engine generator;
     generator.seed( clock() );
-    float limit = sqrt( 10. / (  size1 * size2 ) );
+    float limit = sqrt( 2. / (  size1 * size2 ) );
     std::uniform_real_distribution<float> distribution( 0, limit );
 
     for (int prevId = 0; prevId < size1; prevId++) {
@@ -399,6 +415,16 @@ template <class T> int Argmax( const std::vector<T> &vector ) {
     return maxId;
 }
 
+template <class T> void PrintVector( const std::vector<T> &vector ) {
+    std::cout << "Vector of size: " << vector.size() << "\n";
+    for ( auto element: vector ) {
+        std::cout << element << " ";
+    }
+    std::cout << "\n";
+}
+
+
+
 void TestForward() {
 
     float EPS = 1e-4;
@@ -586,4 +612,18 @@ void GenerateBackPropTestData( Dataset &data, Activity &targetActivity ) {
     targetActivity.expectedOutput[0] = 1;
     targetActivity.expectedOutput[1] = 0;
     targetActivity.expectedOutput[2] = 0.5;
+}
+
+void GeneratePoissonSeries( std::vector<int> &data, int averageNumSpikes, int simulationTime ) {
+    std::default_random_engine generator;
+    generator.seed( clock() );
+    std::uniform_real_distribution<float> distribution( 0, 1 );
+    if ( simulationTime == 0 ) {
+        simulationTime = data.size();
+    }
+    float threshold = static_cast<float>(averageNumSpikes) / simulationTime;
+    for ( int index = 0; index <= simulationTime; ++index ) {
+        data[index] = static_cast<int>(distribution(generator) < threshold);
+    }
+
 }

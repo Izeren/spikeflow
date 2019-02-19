@@ -1,6 +1,5 @@
 #include "LifNeuron.h"
 #include "Synapse.h"
-#include <iostream>
 
 float LifNeuron::GetWDyn(float tOut, float tp, float tRef) {
     if (tOut < 0 || tp < 0 || tRef < 0 || tp - tOut >= tRef) {
@@ -24,7 +23,6 @@ void LifNeuron::UpdatePotential(int time, float potential) {
     }
 
     v = v * leackyFactor + potential * wDyn;
-//    std::cout << tOut << " " << time << " " << tRef << " " << wDyn << " wdyn \n";
     tps = time;
     spikeCounter += 1;
 }
@@ -78,19 +76,19 @@ void LifNeuron::Backward(float sumA) {
         if ( !(outputSynapses[synapseId].updatable) ) {
             continue;
         }
-        outputSynapses[synapseId].DaDx = ( outputSynapses[synapseId].strength + sigma_mu * totalStrength / (1 - sigma_mu * (n - 1) )
-                ) / (1 + sigma_mu);
-        grad += outputSynapses[synapseId].next->grad * outputSynapses[synapseId].strength / vMaxThresh;
-        outputSynapses[synapseId].DlDw = outputSynapses[synapseId].next->grad * a / exp (1 / tau);
+        grad += outputSynapses[synapseId].next->grad * outputSynapses[synapseId].strength;
+        outputSynapses[synapseId].DlDw = outputSynapses[synapseId].next->grad * a;
     }
-    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
+//    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
+    DlDV = 0;
+
 
 }
 
 LifNeuron::LifNeuron() {
     outputSynapses = std::vector<Synapse>();
     v = 0;
-    a= 0;
+    a = 0;
     vMaxThresh = 10;
     tau = 20;
     tps = -1;

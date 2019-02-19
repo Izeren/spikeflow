@@ -3,4 +3,4 @@ project(SpikeProp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(SpikeProp main.cpp Synapse.h LifNeuron.cpp Synapse.cpp EventManager.h EventManager.cpp)
+add_executable(SpikeProp main.cpp Synapse.h LifNeuron.cpp Synapse.cpp EventManager.h EventManager.cpp MnistUtils.hpp)
