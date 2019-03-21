@@ -11,7 +11,6 @@
 #include <eigen3/Eigen/Dense>
 #include "MnistUtils.hpp"
 
-using Eigen::MatrixXd;
 typedef std::vector<std::shared_ptr<LifNeuron> > Layer;
 typedef std::vector<float> Target;
 typedef std::vector<std::vector<int > > SpikeTrain;
@@ -83,15 +82,15 @@ int main() {
     Layer inputLayer;
     InitLayer( inputLayer, INPUT_SIZE, HIDDEN1_SIZE );
     Layer hidden1;
-    InitLayer( hidden1, HIDDEN1_SIZE, HIDDEN2_SIZE );
-    Layer hidden2;
-    InitLayer( hidden2, HIDDEN2_SIZE, OUTPUT_SIZE );
+    InitLayer( hidden1, HIDDEN1_SIZE, OUTPUT_SIZE );
+//    Layer hidden2;
+//    InitLayer( hidden2, HIDDEN2_SIZE, OUTPUT_SIZE );
     Layer output;
     InitLayer( output, OUTPUT_SIZE, 0);
 
     createSynapses(inputLayer, hidden1, INPUT_SIZE, HIDDEN1_SIZE);
-    createSynapses(hidden1, hidden2, HIDDEN1_SIZE, HIDDEN2_SIZE);
-    createSynapses(hidden2, output, HIDDEN2_SIZE, OUTPUT_SIZE);
+    createSynapses(hidden1, output, HIDDEN1_SIZE, OUTPUT_SIZE);
+//    createSynapses(hidden2, output, HIDDEN2_SIZE, OUTPUT_SIZE);
 //    createLaterInibitionSynapses(hidden1, HIDDEN1_SIZE);
 //    createLaterInibitionSynapses(hidden2, HIDDEN2_SIZE);
     for ( int neuronId = 0; neuronId < OUTPUT_SIZE; neuronId++ ) {
@@ -103,9 +102,9 @@ int main() {
     for ( int neuronId = 0; neuronId < HIDDEN1_SIZE; neuronId++ ) {
         hidden1[neuronId].get()->sigma_mu = 0;
     }
-    for ( int neuronId = 0; neuronId < HIDDEN2_SIZE; neuronId++ ) {
-        hidden2[neuronId].get()->sigma_mu = 0;
-    }
+//    for ( int neuronId = 0; neuronId < HIDDEN2_SIZE; neuronId++ ) {
+//        hidden2[neuronId].get()->sigma_mu = 0;
+//    }
 
 
 //    Dataset data;
@@ -149,17 +148,17 @@ int main() {
 //            std::cout << res << " " << data.yTrain[sampleId] << "\n";
 
             RelaxOutputLayer( output, target, OUTPUT_SIZE );
-            RelaxLayer( hidden2, HIDDEN2_SIZE );
+//            RelaxLayer( hidden2, HIDDEN2_SIZE );
             RelaxLayer( hidden1, HIDDEN1_SIZE );
             RelaxInputLayer( inputLayer );
 
             GradStep( output, LEARNING_RATE_W, LEARNING_RATE_V );
-            GradStep( hidden2, LEARNING_RATE_W, LEARNING_RATE_V );
+//            GradStep( hidden2, LEARNING_RATE_W, LEARNING_RATE_V );
             GradStep( hidden1, LEARNING_RATE_W, LEARNING_RATE_V );
             GradStep( inputLayer, LEARNING_RATE_W, LEARNING_RATE_V );
 
             ResetLayer( output );
-            ResetLayer( hidden2 );
+//            ResetLayer( hidden2 );
             ResetLayer( hidden1 );
             ResetLayer( inputLayer );
         }
@@ -192,7 +191,7 @@ int main() {
             }
 //            std::cout << res << " " << t << "\n";
             ResetLayer( output );
-            ResetLayer( hidden2 );
+//            ResetLayer( hidden2 );
             ResetLayer( hidden1 );
             ResetLayer( inputLayer );
 
@@ -396,7 +395,7 @@ int RegisterSample( SpikeTrain &sample, EventManager &manager, Layer &input) {
 void InitLayer( Layer &layer, int size, int nextLayerSize ) {
     float limit;
     if ( nextLayerSize ) {
-        limit = 0.2 * sqrt(3. / nextLayerSize );
+        limit = 0.02 * sqrt(3. / nextLayerSize );
     } else {
         limit = 1;
     }
@@ -430,17 +429,6 @@ template <class T> void PrintVector( const std::vector<T> &vector ) {
         std::cout << element << " ";
     }
     std::cout << "\n";
-}
-
-template <class T> void InitMatrix( std::vector<std::vector<T> > &array, int N, int M) {
-    array.reserve(N);
-    for ( int i = 0; i < N; ++i ) {
-        array.push_back(std::vector<T>());
-        array[i].reserve(M);
-        for ( int j = 0; j <= M; ++j ) {
-            array[i].push_back(0);
-        }
-    }
 }
 
 

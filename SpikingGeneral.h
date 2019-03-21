@@ -1,0 +1,8 @@
+//
+// Created by izeren on 3/22/19.
+//
+
+#ifndef SPIKEPROP_SPIKINGGENERAL_H
+#define SPIKEPROP_SPIKINGGENERAL_H
+
+#endif //SPIKEPROP_SPIKINGGENERAL_H
