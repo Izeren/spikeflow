@@ -1,8 +1,30 @@
-//
-// Created by izeren on 3/21/19.
-//
+#pragma once
 
-#ifndef SPIKEPROP_PRECISEEVENTMANAGER_H
-#define SPIKEPROP_PRECISEEVENTMANAGER_H
 
-#endif //SPIKEPROP_PRECISEEVENTMANAGER_H
+#pragma once
+#include <vector>
+
+class LifNeuron;
+
+typedef LifNeuron *Event;
+typedef std::vector<Event> EventsList;
+typedef LifNeuron *ValidationCandidate;
+typedef std::vector<ValidationCandidate> ValidationCandidates;
+typedef std::vector<EventsList> EventsTimeline;
+typedef std::vector<ValidationCandidates> ValidationTimeline;
+typedef float Time;
+
+class PreciseEventManager {
+public:
+    void RegisterSpikeEvent(Event event, Time time);
+    void RunSimulation();
+    PreciseEventManager( int simulationTime );
+
+    int eventCounter;
+
+private:
+    int numberOfTimeBuckets;
+    EventsTimeline eventsTimeline;
+    ValidationTimeline validationTimeline;
+
+};

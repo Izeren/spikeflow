@@ -1,8 +1,9 @@
-//
-// Created by izeren on 3/22/19.
-//
+#pragma once
 
-#ifndef SPIKEPROP_SPIKINGGENERAL_H
-#define SPIKEPROP_SPIKINGGENERAL_H
 
-#endif //SPIKEPROP_SPIKINGGENERAL_H
+namespace SPIKING_NN {
+    const float TIME_STEP = 0.5;
+
+
+
+};
