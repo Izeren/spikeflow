@@ -1,10 +1,11 @@
 #pragma once
 #include <vector>
 #include <math.h>
+#include "INeuron.h"
 
 class Synapse;
 
-class LifNeuron {
+class LifNeuron : INeuron {
 public:
     void UpdatePotential(int time, float potential);
     void Reset();

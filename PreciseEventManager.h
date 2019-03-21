@@ -1,7 +1,4 @@
 #pragma once
-
-
-#pragma once
 #include <vector>
 
 class LifNeuron;
@@ -18,7 +15,7 @@ class PreciseEventManager {
 public:
     void RegisterSpikeEvent(Event event, Time time);
     void RunSimulation();
-    PreciseEventManager( int simulationTime );
+    PreciseEventManager( int _numberOfTimeBuckets );
 
     int eventCounter;
 
