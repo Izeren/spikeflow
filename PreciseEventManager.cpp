@@ -1,42 +1,88 @@
 #include "PreciseEventManager.h"
-#include "LifNeuron.h"
+#include "INeuron.h"
+#include "ISynapse.h"
 
+/**
+ *
+ * @param simulationTime
+ * This parameter is responsible for total length of simulation and all
+ * the events with time > simulationTime will not be registered
+ *
+ * Note:
+ * This version doesn't support @SPIKING_NN::EventType::SCHEDULED_RELAXATION,
+ * will be supported later.
+ *
+ * Description:
+ * This algorithm does processing of events stepwise. First of all it
+ * selects first of available buckets and processes all the events
+ * registered for that period of time chronologically.
+ *
+ *
+ *
+ * If current event is INCOMING_SPIKE, neuron potential will be updated
+ * If neuron state turned to inconsistent or just the event is
+ * DELAYED_ACTIVATION, new spikes for further neurons will be
+ * registered.
+ * If neuron state was inconsistent, this incoming spike should be processed
+ * but normalization shouldn't be applied
+ * If neuron is inconsistent after normalization, DELAYED_ACTIVATION will be
+ * registered after its refractory period.
+ */
+void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime ) {
+    for ( BucketId bucketId = 0; bucketId * SPIKING_NN::TIME_STEP < simulationTime; ++bucketId ) {
+        for ( auto time_event: eventBuckets[bucketId] ) {
 
-void PreciseEventManager::RegisterSpikeEvent( Event event, Time time ) {
-    eventsTimeline[time].push_back(event);
-}
+            SPIKING_NN::Event &event = time_event.second;
+            if ( event.type != SPIKING_NN::EventType::SCHEDULED_RELAXATION ) {
+                spikeCounter += 1;
+            }
 
-void PreciseEventManager::RunSimulation() {
-    for ( Time time = 0; time < simulationTime; time++ ) {
-        for ( Event event: eventsTimeline[time] ) {
-            eventCounter += 1;
-            auto synapses = event->outputSynapses;
-            if ( event->v > event->vMaxThresh ) {
-                if ( time + 1 < simulationTime ) {
-                    RegisterSpikeEvent( event, time + 1);
+            INeuron &neuron = *event.neuronPtr;
+            bool wasConsistent = neuron.IsConsistent();
+            if ( event.type == SPIKING_NN::EventType::INCOMING_SPIKE ) {
+                neuron.ProcessInputSpike( event.time, event.potential );
+            }
+
+            if ((wasConsistent && !neuron.IsConsistent()) ||
+                (event.type == SPIKING_NN::EventType::DELAYED_ACTIVATION)) {
+                const ISynapses &synapses = neuron.GetOutputSynapses();
+                for ( ISynapse *synapse: synapses ) {
+                    RegisterSpikeEvent( {
+                                                event.time + synapse->GetDelay(),
+                                                synapse->GetPostSynapticNeuron(),
+                                                synapse->GetStrength(),
+                                                SPIKING_NN::EventType::INCOMING_SPIKE
+                                        } );
                 }
             }
-            for ( int synapseId = 0; synapseId < synapses.size(); synapseId++ ) {
-                LifNeuron *next = synapses[synapseId].next;
-                if ( next->IsConsistent()) {
-                    validationTimeline[time].push_back(next);
-                }
-                next->UpdatePotential(time, synapses[synapseId].strength);
-            }
-        }
-        for ( ValidationCandidate candidate: validationTimeline[time] ) {
-            bool isActive = candidate->NormalizePotential(time);
-            if ( isActive ) {
-                if ( time + 1 < simulationTime ) {
-                    RegisterSpikeEvent( candidate, time + 1 );
+            if ( wasConsistent && !neuron.IsConsistent()) {
+                neuron.NormalizePotential( event.time );
+                if ( !neuron.IsConsistent()) {
+                    RegisterSpikeEvent( {
+                                                event.time + neuron.GetTRef(),
+                                                event.neuronPtr,
+                                                0,
+                                                SPIKING_NN::EventType::DELAYED_ACTIVATION
+                                        } );
                 }
             }
         }
     }
 }
 
-PreciseEventManager::PreciseEventManager( int simulationTime ) : simulationTime( simulationTime ) {
-    eventsTimeline = EventsTimeline(simulationTime);
-    validationTimeline = ValidationTimeline(simulationTime);
-    eventCounter = 0;
+void PreciseEventManager::RegisterSpikeEvent( const SPIKING_NN::Event &event ) {
+    BucketId bucketId = GetBucketId( event.time );
+    if ( eventBuckets.find( bucketId ) == eventBuckets.end()) {
+        eventBuckets[bucketId] = {{event.time, event}};
+    } else {
+        eventBuckets[bucketId][event.time] = event;
+    }
+}
+
+
+PreciseEventManager::PreciseEventManager() :
+        spikeCounter( 0 ) {}
+
+BucketId PreciseEventManager::GetBucketId( SPIKING_NN::Time time ) {
+    return static_cast<BucketId>(time / SPIKING_NN::TIME_STEP);
 }

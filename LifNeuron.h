@@ -6,39 +6,40 @@
 
 class ISynapse;
 
+
 class LifNeuron : public INeuron {
 public:
-    void ProcessInputSpike( float time, float potential ) override;
+    void ProcessInputSpike( SPIKING_NN::Time time, SPIKING_NN::Potential potential ) override;
 
     void Reset();
 
-    LifNeuron( float v, float a, float vMinThresh, float vMaxThresh, float tau, float tps, float tOut,
-               float tRef, bool isConsistent );
+    LifNeuron( SPIKING_NN::Potential v, SPIKING_NN::Potential a, SPIKING_NN::Potential vMinThresh,
+               SPIKING_NN::Potential vMaxThresh, SPIKING_NN::Time tau, SPIKING_NN::Time tps, SPIKING_NN::Time tOut,
+               SPIKING_NN::Time tRef, bool isConsistent );
 
     LifNeuron();
 
     bool IsConsistent();
 
-    bool NormalizePotential( float time );
+    void NormalizePotential( SPIKING_NN::Time time ) override;
 
-    void Backward( float sumA );
+    void Backward( SPIKING_NN::Potential sumA );
 
-    void RelaxOutput( float time, bool withSpike = false );
+    void RelaxOutput( SPIKING_NN::Time time, bool withSpike = false );
 
 protected:
 
-    float a;
-    float vMaxThresh;
-    float tau;
-    float tps;
-    float tOut;
-    float tRef;
-    bool isConsistent;
+    SPIKING_NN::Potential a;
+    int spikeCounter;
+    SPIKING_NN::Potential vMaxThresh;
+    SPIKING_NN::Time tau;
+    SPIKING_NN::Time tps;
+    SPIKING_NN::Time tOut;
+
     float grad;
     float sigma_mu;
     float DlDV;
-    int spikeCounter;
 
 private:
-    float GetWDyn( float tOut, float tp, float tRef );
+    float GetWDyn( SPIKING_NN::Time tOut, SPIKING_NN::Time tp, SPIKING_NN::Time tRef );
 };

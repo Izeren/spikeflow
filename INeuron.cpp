@@ -5,13 +5,11 @@
 #include "INeuron.h"
 #include "ISynapse.h"
 
-INeuron::INeuron( float _potential ) : potential( _potential ) {}
-
-const std::unordered_set<ISynapse *> &INeuron::GetInputSynapses() const {
+const ISynapses &INeuron::GetInputSynapses() const {
     return inputSynapses;
 }
 
-const std::unordered_set<ISynapse *> &INeuron::GetOutputSynapses() const {
+const ISynapses &INeuron::GetOutputSynapses() const {
     return outputSynapses;
 }
 
@@ -33,9 +31,29 @@ INeuron::~INeuron() {
 }
 
 void INeuron::ForgetOutputSynapse( ISynapse *synapse ) {
-    outputSynapses.erase(synapse);
+    outputSynapses.erase( synapse );
 }
 
 void INeuron::ForgetInputSynapse( ISynapse *synapse ) {
-    inputSynapses.erase(synapse);
+    inputSynapses.erase( synapse );
 }
+
+INeuron::INeuron( SPIKING_NN::Potential _potential, SPIKING_NN::Time _tRef, bool _isConsistent ) :
+        potential( _potential ), tRef( _tRef ), consistent( _isConsistent ) {}
+
+SPIKING_NN::Time INeuron::GetTRef() const {
+    return tRef;
+}
+
+void INeuron::SetTRef( SPIKING_NN::Time tRef ) {
+    INeuron::tRef = tRef;
+}
+
+bool INeuron::IsConsistent() const {
+    return consistent;
+}
+
+void INeuron::SetConsistent( bool consistent ) {
+    INeuron::consistent = consistent;
+}
+

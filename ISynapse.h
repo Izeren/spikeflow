@@ -1,27 +1,31 @@
 #pragma once
 
+#include "SpikingGeneral.h"
+
 class INeuron;
 
 class ISynapse {
 
 public:
-    ISynapse( float _strength, float _delay );
+    ISynapse( SPIKING_NN::Strength _strength, SPIKING_NN::Time _delay );
 
-    ISynapse( float strength = 1.0, float delay = 1.0, INeuron *preSynapticNeuron = 0, INeuron *postSynapticNeuron );
+    explicit ISynapse( SPIKING_NN::Strength strength = 1.0, SPIKING_NN::Time delay = 1.0,
+                       INeuron *preSynapticNeuron = nullptr,
+                       INeuron *postSynapticNeuron = nullptr );
 
     virtual INeuron *GetPreSynapticNeuron() = 0;
 
     virtual INeuron *GetPostSynapticNeuron() = 0;
 
-    virtual float GetDelay();
+    virtual SPIKING_NN::Time GetDelay();
 
-    virtual float GetStrength();
+    virtual SPIKING_NN::Strength GetStrength();
 
     virtual ~ISynapse();
 
 protected:
-    float strength;
-    float delay;
+    SPIKING_NN::Strength strength;
+    SPIKING_NN::Time delay;
     INeuron *preSynapticNeuron;
     INeuron *postSynapticNeuron;
 };

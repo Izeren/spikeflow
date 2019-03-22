@@ -12,9 +12,6 @@ float LifNeuron::GetWDyn( float tOut, float tp, float tRef ) {
 
 
 void LifNeuron::ProcessInputSpike( float time, float potential ) {
-    if ( isConsistent ) {
-        isConsistent = false;
-    }
     float wDyn = GetWDyn( tOut, time, tRef );
     float leackyFactor;
     if ( tps < 0 ) {
@@ -26,34 +23,31 @@ void LifNeuron::ProcessInputSpike( float time, float potential ) {
     this->potential = this->potential * leackyFactor + potential * wDyn;
     tps = time;
     spikeCounter += 1;
+    if (this->potential > -this->vMaxThresh) {
+        this->potential = -this->vMaxThresh;
+    }
+    consistent = (this->potential < this->vMaxThresh);
 }
 
 LifNeuron::LifNeuron( float v, float a, float vMinThresh,
                       float vMaxThresh, float tau, float tps, float tOut, float tRef, bool isConsistent )
-        : INeuron( v ), a( a ), vMaxThresh( vMaxThresh ),
-          tau( tau ), tps( tps ), tOut( tOut ), tRef( tRef ), isConsistent( isConsistent ) {
+        : INeuron(v, tRef, isConsistent), a( a ), vMaxThresh( vMaxThresh ),
+          tau( tau ), tps( tps ), tOut( tOut ) {
     grad = 0;
     sigma_mu = 0.25;
     DlDV = 0;
 }
 
 bool LifNeuron::IsConsistent() {
-    return isConsistent;
+    return consistent;
 }
 
-bool LifNeuron::NormalizePotential( float time ) {
-    bool spikeStatus = false;
-    if ( potential < -vMaxThresh ) {
-        potential = -vMaxThresh;
-    } else {
-        if ( potential >= vMaxThresh ) {
-            spikeStatus = true;
-            RelaxOutput( time, true );
-            potential -= vMaxThresh;
-        }
+void LifNeuron::NormalizePotential( float time ) {
+    if ( potential >= vMaxThresh ) {
+        RelaxOutput( time, true );
+        potential -= vMaxThresh;
     }
-    isConsistent = true;
-    return spikeStatus;
+    consistent = (potential < vMaxThresh);
 }
 
 
@@ -90,7 +84,7 @@ LifNeuron::LifNeuron() {
     tps = -1;
     tOut = -1;
     tRef = 3;
-    isConsistent = true;
+    consistent = true;
     grad = 0;
     sigma_mu = 0.025;
     DlDV = 0;
@@ -102,7 +96,7 @@ void LifNeuron::Reset() {
     a = 0;
     tps = -1;
     tOut = -1;
-    isConsistent = true;
+    consistent = true;
     grad = 0;
     DlDV = 0;
     spikeCounter = 0;

@@ -5,11 +5,11 @@
 #include "ISynapse.h"
 #include "INeuron.h"
 
-float ISynapse::GetDelay() {
+SPIKING_NN::Time ISynapse::GetDelay() {
     return delay;
 }
 
-float ISynapse::GetStrength() {
+SPIKING_NN::Strength ISynapse::GetStrength() {
     return strength;
 }
 
@@ -22,9 +22,10 @@ ISynapse::~ISynapse() {
     }
 }
 
-ISynapse::ISynapse( float _strength, float _delay ) :
+ISynapse::ISynapse( SPIKING_NN::Strength _strength, SPIKING_NN::Time _delay ) :
         strength( _strength ), delay( _delay ) {}
 
-ISynapse::ISynapse( float _strength, float _delay, INeuron *_preSynapticNeuron, INeuron *_postSynapticNeuron ) :
+ISynapse::ISynapse( SPIKING_NN::Strength _strength, SPIKING_NN::Time _delay, INeuron *_preSynapticNeuron,
+                    INeuron *_postSynapticNeuron ) :
         strength( _strength ), delay( _delay ), preSynapticNeuron( _preSynapticNeuron ),
         postSynapticNeuron( _postSynapticNeuron ) {}
