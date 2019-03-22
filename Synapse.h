@@ -1,20 +1,27 @@
 #pragma once
-#include <vector>
 
-class LifNeuron;
-class Synapse;
-typedef std::vector<Synapse> SynapseList;
+#include "ISynapse.h"
 
-class Synapse {
+class Synapse : public ISynapse {
+
 public:
-    Synapse( bool updatable, float strength, LifNeuron *previous, LifNeuron *next );
-    Synapse();
+    explicit Synapse( bool isUpdatable = true, float strength = 1.0, float delay = 1.0,
+                      INeuron *prev = nullptr, INeuron *next = nullptr );
 
-    bool updatable;
-    float strength;
+    bool isUpdatable() const;
+
+    void setUpdatable( bool updatable );
+
+    float getDaDx() const;
+
+    void setDaDx( float DaDx );
+
+    float getDlDw() const;
+
+    void setDlDw( float DlDw );
+
+protected:
     float DaDx;
     float DlDw;
-    LifNeuron *previous;
-    LifNeuron *next;
-
+    bool updatable;
 };

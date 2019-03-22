@@ -1,8 +1,9 @@
 #include "LifNeuron.h"
 #include "Synapse.h"
 
-float LifNeuron::GetWDyn(float tOut, float tp, float tRef) {
-    if (tOut < 0 || tp < 0 || tRef < 0 || tp - tOut >= tRef) {
+
+float LifNeuron::GetWDyn( float tOut, float tp, float tRef ) {
+    if ( tOut < 0 || tp < 0 || tRef < 0 || tp - tOut >= tRef ) {
         return 1;
     } else {
         return (tp - tOut) * (tp - tOut) / tRef / tRef;
@@ -10,74 +11,69 @@ float LifNeuron::GetWDyn(float tOut, float tp, float tRef) {
 }
 
 
-void LifNeuron::UpdatePotential(int time, float potential) {
+void LifNeuron::ProcessInputSpike( float time, float potential ) {
     if ( isConsistent ) {
         isConsistent = false;
     }
-    float wDyn = GetWDyn(tOut, time, tRef);
+    float wDyn = GetWDyn( tOut, time, tRef );
     float leackyFactor;
     if ( tps < 0 ) {
         leackyFactor = 1;
     } else {
-        leackyFactor = exp((tps - time) / tau);
+        leackyFactor = exp((tps - time) / tau );
     }
 
-    v = v * leackyFactor + potential * wDyn;
+    this->potential = this->potential * leackyFactor + potential * wDyn;
     tps = time;
     spikeCounter += 1;
 }
 
-LifNeuron::LifNeuron( const std::vector<Synapse> &outputSynapses, float v, float a, float vMinThresh,
+LifNeuron::LifNeuron( float v, float a, float vMinThresh,
                       float vMaxThresh, float tau, float tps, float tOut, float tRef, bool isConsistent )
-        : outputSynapses( outputSynapses ), v( v ), a( a ), vMaxThresh( vMaxThresh ),
+        : INeuron( v ), a( a ), vMaxThresh( vMaxThresh ),
           tau( tau ), tps( tps ), tOut( tOut ), tRef( tRef ), isConsistent( isConsistent ) {
-    grad=0;
-    sigma_mu=0.25;
+    grad = 0;
+    sigma_mu = 0.25;
     DlDV = 0;
-}
-
-const std::vector<Synapse> &LifNeuron::GetOutputSynapses() const {
-    return outputSynapses;
 }
 
 bool LifNeuron::IsConsistent() {
     return isConsistent;
 }
 
-bool LifNeuron::NormalizePotential(int time) {
+bool LifNeuron::NormalizePotential( float time ) {
     bool spikeStatus = false;
-    if ( v < -vMaxThresh) {
-        v = -vMaxThresh;
+    if ( potential < -vMaxThresh ) {
+        potential = -vMaxThresh;
     } else {
-        if ( v >= vMaxThresh ) {
+        if ( potential >= vMaxThresh ) {
             spikeStatus = true;
             RelaxOutput( time, true );
-            v -= vMaxThresh;
+            potential -= vMaxThresh;
         }
     }
     isConsistent = true;
     return spikeStatus;
 }
 
-void LifNeuron::AddSynapse( const Synapse &synapse ) {
-    outputSynapses.push_back( synapse );
-}
 
-void LifNeuron::Backward(float sumA) {
+void LifNeuron::Backward( float sumA ) {
     float totalStrength = 0;
-    size_t n = outputSynapses.size();
     for ( auto synapse: outputSynapses ) {
-        if ( synapse.updatable ) {
-            totalStrength += synapse.strength / synapse.next->vMaxThresh;
+        if ( dynamic_cast<Synapse *>(synapse)->isUpdatable()) {
+            totalStrength += synapse->GetStrength() /
+                             dynamic_cast<LifNeuron *>(synapse->GetPostSynapticNeuron())->vMaxThresh;
         }
     }
     grad = 0;
-    for ( int synapseId = 0; synapseId < outputSynapses.size(); synapseId++ ) {
-        if ( !(outputSynapses[synapseId].updatable) ) {
+    for ( ISynapse *outputSynapse: outputSynapses ) {
+        auto outputSynapsePtr = dynamic_cast<Synapse *>(outputSynapse);
+        if ( !(outputSynapsePtr->isUpdatable())) {
             continue;
         }
-        grad += outputSynapses[synapseId].next->grad * outputSynapses[synapseId].strength;
-        outputSynapses[synapseId].DlDw = outputSynapses[synapseId].next->grad * a;
+        auto next = dynamic_cast<LifNeuron *>(outputSynapsePtr->GetPostSynapticNeuron());
+        grad += next->grad * outputSynapsePtr->GetStrength();
+        outputSynapsePtr->setDlDw( next->grad * a );
     }
 //    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
     DlDV = 0;
@@ -86,8 +82,8 @@ void LifNeuron::Backward(float sumA) {
 }
 
 LifNeuron::LifNeuron() {
-    outputSynapses = std::vector<Synapse>();
-    v = 0;
+    outputSynapses = std::unordered_set<ISynapse *>();
+    potential = 0;
     a = 0;
     vMaxThresh = 10;
     tau = 20;
@@ -102,7 +98,7 @@ LifNeuron::LifNeuron() {
 }
 
 void LifNeuron::Reset() {
-    v = 0;
+    potential = 0;
     a = 0;
     tps = -1;
     tOut = -1;
@@ -112,9 +108,9 @@ void LifNeuron::Reset() {
     spikeCounter = 0;
 }
 
-void LifNeuron::RelaxOutput( int time, bool withSpike) {
+void LifNeuron::RelaxOutput( float time, bool withSpike ) {
     if ( tOut >= 0 ) {
-        a = a * exp((tOut - time) / tau) + withSpike;
+        a = a * exp((tOut - time) / tau ) + withSpike;
     } else {
         a = withSpike;
     }

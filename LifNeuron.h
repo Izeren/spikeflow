@@ -1,29 +1,32 @@
 #pragma once
-#include <vector>
+
+#include <unordered_set>
 #include <math.h>
 #include "INeuron.h"
 
-class Synapse;
+class ISynapse;
 
-class LifNeuron : INeuron {
+class LifNeuron : public INeuron {
 public:
-    void UpdatePotential(int time, float potential);
+    void ProcessInputSpike( float time, float potential ) override;
+
     void Reset();
 
-    LifNeuron( const std::vector<Synapse> &outputSynapses, float v, float a, float vMinThresh,
-               float vMaxThresh, float tau, float tps, float tOut, float tRef, bool isConsistent );
+    LifNeuron( float v, float a, float vMinThresh, float vMaxThresh, float tau, float tps, float tOut,
+               float tRef, bool isConsistent );
 
     LifNeuron();
 
-    const std::vector<Synapse> &GetOutputSynapses() const;
     bool IsConsistent();
-    bool NormalizePotential(int time);
-    void AddSynapse(const Synapse &synapse);
-    void Backward(float sumA);
-    void RelaxOutput( int time, bool withSpike=false );
 
-    std::vector<Synapse> outputSynapses;
-    float v;
+    bool NormalizePotential( float time );
+
+    void Backward( float sumA );
+
+    void RelaxOutput( float time, bool withSpike = false );
+
+protected:
+
     float a;
     float vMaxThresh;
     float tau;
@@ -37,5 +40,5 @@ public:
     int spikeCounter;
 
 private:
-    float GetWDyn(float tOut, float tp, float tRef);
+    float GetWDyn( float tOut, float tp, float tRef );
 };
