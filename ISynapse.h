@@ -13,19 +13,30 @@ public:
                        INeuron *preSynapticNeuron = nullptr,
                        INeuron *postSynapticNeuron = nullptr );
 
-    virtual INeuron *GetPreSynapticNeuron() = 0;
-
-    virtual INeuron *GetPostSynapticNeuron() = 0;
-
     virtual SPIKING_NN::Time GetDelay();
 
     virtual SPIKING_NN::Strength GetStrength();
 
     virtual ~ISynapse();
 
+    INeuron *GetPreSynapticNeuron() const;
+
+    void SetPreSynapticNeuron( INeuron *preSynapticNeuron );
+
+    INeuron *GetPostSynapticNeuron() const;
+
+    void SetPostSynapticNeuron( INeuron *postSynapticNeuron );
+
 protected:
     SPIKING_NN::Strength strength;
+public:
+    void SetStrength( SPIKING_NN::Strength strength );
+
+    void SetDelay( SPIKING_NN::Time delay );
+
+protected:
     SPIKING_NN::Time delay;
     INeuron *preSynapticNeuron;
     INeuron *postSynapticNeuron;
+
 };

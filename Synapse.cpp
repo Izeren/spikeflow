@@ -9,26 +9,26 @@ Synapse::Synapse( bool _isUpdatable, float _strength, float _delay,
     DlDw = 0;
 }
 
-float Synapse::getDaDx() const {
-    return DaDx;
-}
-
-void Synapse::setDaDx( float DaDx ) {
-    Synapse::DaDx = DaDx;
-}
-
-float Synapse::getDlDw() const {
-    return DlDw;
-}
-
-void Synapse::setDlDw( float DlDw ) {
-    Synapse::DlDw = DlDw;
-}
-
-bool Synapse::isUpdatable() const {
+bool Synapse::IsUpdatable() const {
     return updatable;
 }
 
-void Synapse::setUpdatable( bool updatable ) {
+void Synapse::SetUpdatable( bool updatable ) {
     Synapse::updatable = updatable;
+}
+
+float Synapse::GetDaDx() const {
+    return DaDx;
+}
+
+void Synapse::SetDaDx( float DaDx ) {
+    Synapse::DaDx = DaDx;
+}
+
+float Synapse::GetDlDw() const {
+    return DlDw;
+}
+
+void Synapse::SetDlDw( float DlDw ) {
+    Synapse::DlDw = DlDw;
 }

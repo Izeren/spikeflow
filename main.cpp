@@ -4,7 +4,7 @@
 #include <sstream>
 #include "LifNeuron.h"
 #include "Synapse.h"
-#include "EventManager.h"
+#include "PreciseEventManager.h"
 #include <memory>
 #include <random>
 #include <time.h>
@@ -13,7 +13,7 @@
 
 typedef std::vector<std::shared_ptr<LifNeuron> > Layer;
 typedef std::vector<float> Target;
-typedef std::vector<std::vector<int > > SpikeTrain;
+typedef std::vector<std::vector<int> > SpikeTrain;
 
 typedef struct {
     std::vector<SpikeTrain> xTrain;
@@ -37,39 +37,50 @@ const float LAMBDA = 0.008;
 const int SIMULATION_TIME = 50;
 
 
+void ReadData( const std::string &path, Dataset &data, int inputSize, int simulationTime );
 
-void ReadData( const std::string &path, Dataset& data, int inputSize, int simulationTime);
-void createSynapses(Layer &layer1, Layer &layer2,
-                    int size1, int size2);
-void createLaterInibitionSynapses(Layer &layer, int size);
+void createSynapses( Layer &layer1, Layer &layer2,
+                     int size1, int size2 );
 
-void RelaxLayer(Layer &layer, int size);
+void createLaterInibitionSynapses( Layer &layer, int size );
+
+void RelaxLayer( Layer &layer, int size );
+
 void RelaxOutputLayer( Layer &outputLayer, const Target &target, int size );
-void RelaxInputLayer( Layer &layer);
+
+void RelaxInputLayer( Layer &layer );
 
 void InitLayer( Layer &layer, int size, int nextLayerSize );
 
 
 void GradStep( Layer &layer, float learningRateW, float learningRateV );
-int RegisterSample( SpikeTrain &sample, EventManager &manager, Layer &input);
+
+int RegisterSample( SpikeTrain &sample, PreciseEventManager &manager, Layer &input );
+
 void ResetLayer( Layer &layer );
 
 float SoftMaxLoss( Layer &outputLayer, const Target &target,
-                   std::vector<float> &softMax, std::vector<float> &deltas, float *S);
+                   std::vector<float> &softMax, std::vector<float> &deltas, float *S );
 
-template <class T> int Argmax( const std::vector<T> &vector );
+template<class T>
+int Argmax( const std::vector<T> &vector );
 
-void GenerateTestData(Dataset &data, Activity &targetActivity);
+void GenerateTestData( Dataset &data, Activity &targetActivity );
+
 void GenerateBackPropTestData( Dataset &data, Activity &targetActivity );
+
 void TestForward();
+
 void TestBackProp();
 
-void GeneratePoissonSeries( std::vector<int> &data, int averageNumSpikes, int simulationTime=0 );
+void GeneratePoissonSeries( std::vector<int> &data, int averageNumSpikes, int simulationTime = 0 );
 
 void ConvertMnistToSpikes( const MNIST::Dataset &mnist, Dataset &converted, int simulationTime );
+
 void ConvertMnistSampleToSpikes( const std::vector<int> &sample, SpikeTrain &converted, int simulationTime );
 
-template <class T> void PrintVector( const std::vector<T> &vector );
+template<class T>
+void PrintVector( const std::vector<T> &vector );
 
 
 int main() {
@@ -77,7 +88,7 @@ int main() {
 //    TestBackProp();
 
     MNIST::Dataset data;
-    MNIST::ReadMnist("/home/izeren/CLionProjects/SpikeProp/mnist_data", data);
+    MNIST::ReadMnist( "/home/izeren/CLionProjects/SpikeProp/mnist_data", data );
 
     Layer inputLayer;
     InitLayer( inputLayer, INPUT_SIZE, HIDDEN1_SIZE );
@@ -86,22 +97,22 @@ int main() {
 //    Layer hidden2;
 //    InitLayer( hidden2, HIDDEN2_SIZE, OUTPUT_SIZE );
     Layer output;
-    InitLayer( output, OUTPUT_SIZE, 0);
+    InitLayer( output, OUTPUT_SIZE, 0 );
 
-    createSynapses(inputLayer, hidden1, INPUT_SIZE, HIDDEN1_SIZE);
-    createSynapses(hidden1, output, HIDDEN1_SIZE, OUTPUT_SIZE);
+    createSynapses( inputLayer, hidden1, INPUT_SIZE, HIDDEN1_SIZE );
+    createSynapses( hidden1, output, HIDDEN1_SIZE, OUTPUT_SIZE );
 //    createSynapses(hidden2, output, HIDDEN2_SIZE, OUTPUT_SIZE);
 //    createLaterInibitionSynapses(hidden1, HIDDEN1_SIZE);
 //    createLaterInibitionSynapses(hidden2, HIDDEN2_SIZE);
-    for ( int neuronId = 0; neuronId < OUTPUT_SIZE; neuronId++ ) {
-        output[neuronId].get()->sigma_mu = 0;
-    }
-    for ( int neuronId = 0; neuronId < INPUT_SIZE; neuronId++ ) {
-        inputLayer[neuronId].get()->sigma_mu = 0;
-    }
-    for ( int neuronId = 0; neuronId < HIDDEN1_SIZE; neuronId++ ) {
-        hidden1[neuronId].get()->sigma_mu = 0;
-    }
+//    for ( int neuronId = 0; neuronId < OUTPUT_SIZE; neuronId++ ) {
+//        output[neuronId].get()->sigma_mu = 0;
+//    }
+//    for ( int neuronId = 0; neuronId < INPUT_SIZE; neuronId++ ) {
+//        inputLayer[neuronId].get()->sigma_mu = 0;
+//    }
+//    for ( int neuronId = 0; neuronId < HIDDEN1_SIZE; neuronId++ ) {
+//        hidden1[neuronId].get()->sigma_mu = 0;
+//    }
 //    for ( int neuronId = 0; neuronId < HIDDEN2_SIZE; neuronId++ ) {
 //        hidden2[neuronId].get()->sigma_mu = 0;
 //    }
@@ -111,12 +122,11 @@ int main() {
 //    ReadData("/home/izeren/projects/snn_projects/brian2_tests/data/bindsnet/xor.data", data, INPUT_SIZE, 50);
 
 
-    std::vector<std::vector<int> > tmp( INPUT_SIZE, std::vector<int>( SIMULATION_TIME, 0 ) );
-
+    std::vector<std::vector<int> > tmp( INPUT_SIZE, std::vector<int>( SIMULATION_TIME, 0 ));
 
 
     std::default_random_engine generator;
-    generator.seed( clock() );
+    generator.seed( clock());
     std::uniform_real_distribution<float> distribution( 0, 1 );
 
     for ( int epochId = 0; epochId < 30; epochId++ ) {
@@ -125,8 +135,8 @@ int main() {
         float totalTrainLoss = 0;
         float totalTestLoss = 0;
         for ( int sampleId = 0; sampleId < 600; sampleId++ ) {
-            EventManager eventManager( 50 );
-            ConvertMnistSampleToSpikes(data.xTrain[sampleId], tmp, SIMULATION_TIME );
+            PreciseEventManager eventManager( 50 );
+            ConvertMnistSampleToSpikes( data.xTrain[sampleId], tmp, SIMULATION_TIME );
             int sampleSize = RegisterSample( tmp, eventManager, inputLayer );
             eventManager.RunSimulation();
 //            std::cout << "NumSpikes for sample: " << sampleId << " " << eventManager.eventCounter;
@@ -137,10 +147,10 @@ int main() {
 
             float S = 0;
             std::vector<float> softMax;
-            std::vector<float> deltas(OUTPUT_SIZE, 0);
+            std::vector<float> deltas( OUTPUT_SIZE, 0 );
             float loss = SoftMaxLoss( output, target, softMax, deltas, &S );
             totalTrainLoss += loss;
-            int res = Argmax(softMax);
+            int res = Argmax( softMax );
 //            std::cout << softMax[0] << " " << softMax[1] << " " << softMax[2] << "\n";
             if ( res == data.yTrain[sampleId] ) {
                 train_good_counter += 1;
@@ -171,7 +181,7 @@ int main() {
         float test_good_counter = 0;
         for ( int sampleId = 0; sampleId < 100; sampleId++ ) {
             EventManager eventManager( 50 );
-            ConvertMnistSampleToSpikes(data.xTest[sampleId], tmp, SIMULATION_TIME );
+            ConvertMnistSampleToSpikes( data.xTest[sampleId], tmp, SIMULATION_TIME );
             int sampleSize = RegisterSample( tmp, eventManager, inputLayer );
             eventManager.RunSimulation();
 
@@ -180,11 +190,11 @@ int main() {
             target[data.yTest[sampleId]] = 1;
             float S = 0;
             std::vector<float> softMax;
-            std::vector<float> deltas(OUTPUT_SIZE, 0);
+            std::vector<float> deltas( OUTPUT_SIZE, 0 );
             float loss = SoftMaxLoss( output, target, softMax, deltas, &S );
             totalTestLoss += loss;
 
-            int res = Argmax(softMax);
+            int res = Argmax( softMax );
 //            std::cout << softMax[0] << " " << softMax[1] << " " << softMax[2] << "\n";
             if ( res == t ) {
                 test_good_counter += 1;
@@ -208,32 +218,34 @@ int main() {
 
 }
 
-void createSynapses(Layer &layer1, Layer &layer2,
-                    int size1, int size2) {
+void createSynapses( Layer &layer1, Layer &layer2,
+                     int size1, int size2 ) {
     std::default_random_engine generator;
-    generator.seed( clock() );
-    float limit = sqrt( 10. / (  size1 * size2 ) );
+    generator.seed( clock());
+    float limit = sqrt( 10. / (size1 * size2));
     std::uniform_real_distribution<float> distribution( 0, limit );
 
-    for (int prevId = 0; prevId < size1; prevId++) {
-        for (int nextId = 0; nextId < size2; nextId++) {
+    for ( int prevId = 0; prevId < size1; prevId++ ) {
+        for ( int nextId = 0; nextId < size2; nextId++ ) {
             LifNeuron *prev = layer1[prevId].get();
             LifNeuron *next = layer2[nextId].get();
-            prev->outputSynapses.emplace_back(Synapse());
-            prev->outputSynapses.back().strength = distribution(generator);
-            prev->outputSynapses.back().previous = prev;
-            prev->outputSynapses.back().next = next;
+            ISynapse *synapsePtr = new Synapse();
+            prev->AddOutputSynapse( synapsePtr );
+            next->AddInputSynapse( synapsePtr );
+            synapsePtr->SetStrength( distribution( generator ));
+            synapsePtr->SetPreSynapticNeuron(prev);
+            synapsePtr->SetPostSynapticNeuron(next);
         }
     }
 }
 
-void createLaterInibitionSynapses(Layer &layer, int size) {
-    for (int prevId = 0; prevId < size; prevId++) {
-        for (int nextId = 0; nextId < size; nextId++) {
+void createLaterInibitionSynapses( Layer &layer, int size ) {
+    for ( int prevId = 0; prevId < size; prevId++ ) {
+        for ( int nextId = 0; nextId < size; nextId++ ) {
             if ( prevId != nextId ) {
                 LifNeuron *prev = layer[prevId].get();
                 LifNeuron *next = layer[nextId].get();
-                prev->outputSynapses.emplace_back(Synapse());
+                prev->outputSynapses.emplace_back( Synapse());
                 prev->outputSynapses.back().strength = -1;
                 prev->outputSynapses.back().updatable = false;
                 prev->outputSynapses.back().previous = prev;
@@ -244,18 +256,18 @@ void createLaterInibitionSynapses(Layer &layer, int size) {
 }
 
 float SoftMaxLoss( Layer &outputLayer, const Target &target,
-        std::vector<float> &softMax, std::vector<float> &deltas, float *S) {
+                   std::vector<float> &softMax, std::vector<float> &deltas, float *S ) {
     float expSum = 0;
     float loss = 0;
     for ( auto neuron: outputLayer ) {
-        softMax.push_back(exp(neuron.get()->a));
+        softMax.push_back( exp( neuron.get()->a ));
         expSum += softMax.back();
     }
     for ( int neuronId = 0; neuronId < outputLayer.size(); neuronId++ ) {
         softMax[neuronId] /= expSum;
         deltas[neuronId] = softMax[neuronId] - target[neuronId];
 //        *S += softMax[neuronId] * deltas[neuronId];
-        loss += target[neuronId] * log(softMax[neuronId]);
+        loss += target[neuronId] * log( softMax[neuronId] );
     }
     return -loss;
 }
@@ -264,14 +276,14 @@ void RelaxOutputLayer( Layer &outputLayer, const Target &target, int size ) {
     float Sa = 0;
     float S = 0;
     std::vector<float> softMax;
-    std::vector<float> deltas(size, 0);
+    std::vector<float> deltas( size, 0 );
     for ( int neuronId = 0; neuronId < size; neuronId++ ) {
-        outputLayer[neuronId].get()->RelaxOutput(49);
+        outputLayer[neuronId].get()->RelaxOutput( 49 );
     }
     SoftMaxLoss( outputLayer, target, softMax, deltas, &S );
     for ( int softMaxId = 0; softMaxId < size; softMaxId++ ) {
         outputLayer[softMaxId].get()->grad = deltas[softMaxId];
-        outputLayer[softMaxId].get()->RelaxOutput(49);
+        outputLayer[softMaxId].get()->RelaxOutput( 49 );
         Sa += outputLayer[softMaxId].get()->a;
     }
     for ( int neuronId = 0; neuronId < size; neuronId++ ) {
@@ -283,31 +295,31 @@ void RelaxOutputLayer( Layer &outputLayer, const Target &target, int size ) {
 void RelaxLayer( Layer &layer, int size ) {
     float Sa = 0;
     for ( auto neuron: layer ) {
-        neuron.get()->RelaxOutput(49);
+        neuron.get()->RelaxOutput( 49 );
         Sa += neuron.get()->a;
     }
     for ( auto neuron: layer ) {
-        neuron.get()->Backward(Sa);
+        neuron.get()->Backward( Sa );
     }
 }
 
-void RelaxInputLayer( Layer &layer) {
+void RelaxInputLayer( Layer &layer ) {
     float Sa = 0;
     for ( auto neuron: layer ) {
-        neuron.get()->RelaxOutput(49);
+        neuron.get()->RelaxOutput( 49 );
         Sa += neuron.get()->a;
-        neuron.get()->Backward(Sa);
+        neuron.get()->Backward( Sa );
         neuron.get()->DlDV = 0;
         neuron.get()->grad = 0;
     }
 }
 
-void ReadData( const std::string &path, Dataset& data, int inputSize, int simulationTime) {
-    std::ifstream in(path);
+void ReadData( const std::string &path, Dataset &data, int inputSize, int simulationTime ) {
+    std::ifstream in( path );
     int n;
     in >> n;
-    data.xTrain = std::vector<SpikeTrain>(n, SpikeTrain(simulationTime, std::vector<int>(inputSize)));
-    data.yTrain = std::vector<float>(n);
+    data.xTrain = std::vector<SpikeTrain>( n, SpikeTrain( simulationTime, std::vector<int>( inputSize )));
+    data.yTrain = std::vector<float>( n );
     for ( int sampleId = 0; sampleId < n; sampleId++ ) {
         for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
             for ( int neuronId = 0; neuronId < inputSize; neuronId++ ) {
@@ -319,8 +331,8 @@ void ReadData( const std::string &path, Dataset& data, int inputSize, int simula
         in >> data.yTrain[sampleId];
     }
     in >> n;
-    data.xTest = std::vector<SpikeTrain>(n, SpikeTrain(simulationTime, std::vector<int>(inputSize)));
-    data.yTest= std::vector<float>(n);
+    data.xTest = std::vector<SpikeTrain>( n, SpikeTrain( simulationTime, std::vector<int>( inputSize )));
+    data.yTest = std::vector<float>( n );
     for ( int sampleId = 0; sampleId < n; sampleId++ ) {
         for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
             for ( int neuronId = 0; neuronId < inputSize; neuronId++ ) {
@@ -333,7 +345,7 @@ void ReadData( const std::string &path, Dataset& data, int inputSize, int simula
     }
 }
 
-void GradStep( Layer &layer, float learningRateW, float learningRateV) {
+void GradStep( Layer &layer, float learningRateW, float learningRateV ) {
     float N = layer.size(), M = 0, m = 0;
 //    int N2 = layer[0].get()->outputSynapses.size();
 //    if ( N2 == 0 ) {
@@ -352,7 +364,7 @@ void GradStep( Layer &layer, float learningRateW, float learningRateV) {
         }
     }
     S = BETA * (S - 1);
-    float F = exp(S);
+    float F = exp( S );
     if ( m == 0 ) {
         m = 1;
     }
@@ -378,7 +390,7 @@ void GradStep( Layer &layer, float learningRateW, float learningRateV) {
     }
 }
 
-int RegisterSample( SpikeTrain &sample, EventManager &manager, Layer &input) {
+int RegisterSample( SpikeTrain &sample, EventManager &manager, Layer &input ) {
     int sampleSize = 0;
     for ( int tick = 0; tick < sample[0].size(); tick++ ) {
         for ( int neuronId = 0; neuronId < input.size(); neuronId++ ) {
@@ -395,13 +407,13 @@ int RegisterSample( SpikeTrain &sample, EventManager &manager, Layer &input) {
 void InitLayer( Layer &layer, int size, int nextLayerSize ) {
     float limit;
     if ( nextLayerSize ) {
-        limit = 0.02 * sqrt(3. / nextLayerSize );
+        limit = 0.02 * sqrt( 3. / nextLayerSize );
     } else {
         limit = 1;
     }
 
-    layer = Layer(size, 0);
-    for ( int neuronId=0; neuronId < size; neuronId++ ) {
+    layer = Layer( size, 0 );
+    for ( int neuronId = 0; neuronId < size; neuronId++ ) {
         layer[neuronId] = std::make_shared<LifNeuron>();
         layer[neuronId].get()->vMaxThresh = limit;
     }
@@ -413,24 +425,25 @@ void ResetLayer( Layer &layer ) {
     }
 }
 
-template <class T> int Argmax( const std::vector<T> &vector ) {
+template<class T>
+int Argmax( const std::vector<T> &vector ) {
     int maxId = 0;
     for ( int index = 0; index < vector.size(); index++ ) {
-        if ( vector[index] > vector[maxId]) {
+        if ( vector[index] > vector[maxId] ) {
             maxId = index;
         }
     }
     return maxId;
 }
 
-template <class T> void PrintVector( const std::vector<T> &vector ) {
+template<class T>
+void PrintVector( const std::vector<T> &vector ) {
     std::cout << "Vector of size: " << vector.size() << "\n";
     for ( auto element: vector ) {
         std::cout << element << " ";
     }
     std::cout << "\n";
 }
-
 
 
 void TestForward() {
@@ -440,12 +453,12 @@ void TestForward() {
     Layer inputLayer;
     InitLayer( inputLayer, 1, 1 );
     Layer hidden1;
-    InitLayer( hidden1, 1, 1);
+    InitLayer( hidden1, 1, 1 );
     Layer output;
-    InitLayer( output, 1, 0);
+    InitLayer( output, 1, 0 );
 
-    createSynapses(inputLayer, hidden1, 1, 1);
-    createSynapses(hidden1, output, 1, 1 );
+    createSynapses( inputLayer, hidden1, 1, 1 );
+    createSynapses( hidden1, output, 1, 1 );
     output[0].get()->sigma_mu = 0;
     inputLayer[0].get()->sigma_mu = 0;
     hidden1[0].get()->sigma_mu = 0;
@@ -465,8 +478,8 @@ void TestForward() {
             EventManager eventManager( 50 );
             int sampleSize = RegisterSample( data.xTrain[sampleId], eventManager, inputLayer );
             eventManager.RunSimulation();
-            output.back().get()->RelaxOutput(49);
-            float activityDelta = abs(output.back().get()->a - targetActivity.expectedOutput[sampleId]);
+            output.back().get()->RelaxOutput( 49 );
+            float activityDelta = abs( output.back().get()->a - targetActivity.expectedOutput[sampleId] );
             if ( activityDelta < EPS ) {
                 std::cout << "Forward test " << sampleId << " Successfully passed, status: OK\n";
             } else {
@@ -486,10 +499,10 @@ void TestBackProp() {
     Layer hidden1;
     InitLayer( hidden1, 2, 2 );
     Layer output;
-    InitLayer( output, 2, 0);
+    InitLayer( output, 2, 0 );
 
-    createSynapses(inputLayer, hidden1, 2, 2);
-    createSynapses(hidden1, output, 2, 2);
+    createSynapses( inputLayer, hidden1, 2, 2 );
+    createSynapses( hidden1, output, 2, 2 );
     for ( int neuronId = 0; neuronId < OUTPUT_SIZE; neuronId++ ) {
         output[neuronId].get()->sigma_mu = 0;
     }
@@ -502,7 +515,7 @@ void TestBackProp() {
 
     Dataset data;
     Activity targetActivity;
-    GenerateBackPropTestData(data, targetActivity);
+    GenerateBackPropTestData( data, targetActivity );
 
     float EPS = 1e-1;
     float LEARNING_RATE_W = 0.01;
@@ -537,7 +550,7 @@ void TestBackProp() {
 
             float S = 0;
             std::vector<float> softMax;
-            std::vector<float> deltas(OUTPUT_SIZE, 0);
+            std::vector<float> deltas( OUTPUT_SIZE, 0 );
             float loss = SoftMaxLoss( output, target, softMax, deltas, &S );
 
             float activityDelta = deltas[0];
@@ -569,7 +582,7 @@ void TestBackProp() {
 void GenerateTestData( Dataset &data, Activity &targetActivity ) {
     int simulationTime = 50;
     int inputSize = 1;
-    data.xTrain = std::vector<SpikeTrain>(4, SpikeTrain(simulationTime, std::vector<int>(inputSize)));
+    data.xTrain = std::vector<SpikeTrain>( 4, SpikeTrain( simulationTime, std::vector<int>( inputSize )));
     for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
         for ( int neuronId = 0; neuronId < inputSize; neuronId++ ) {
             data.xTrain[0][timeId][neuronId] = 1;
@@ -590,7 +603,7 @@ void GenerateTestData( Dataset &data, Activity &targetActivity ) {
             data.xTrain[3][timeId][neuronId] = 0;
         }
     }
-    targetActivity.expectedOutput = std::vector<float>(4);
+    targetActivity.expectedOutput = std::vector<float>( 4 );
     targetActivity.expectedOutput[0] = 3.17442;
     targetActivity.expectedOutput[1] = 2.36357;
     targetActivity.expectedOutput[2] = 1.67968;
@@ -600,7 +613,7 @@ void GenerateTestData( Dataset &data, Activity &targetActivity ) {
 void GenerateBackPropTestData( Dataset &data, Activity &targetActivity ) {
     int simulationTime = 50;
     int inputSize = 2;
-    data.xTrain = std::vector<SpikeTrain>(3, SpikeTrain(simulationTime, std::vector<int>(inputSize)));
+    data.xTrain = std::vector<SpikeTrain>( 3, SpikeTrain( simulationTime, std::vector<int>( inputSize )));
     for ( int timeId = 0; timeId < simulationTime; timeId++ ) {
         data.xTrain[0][timeId][0] = 1;
     }
@@ -612,11 +625,11 @@ void GenerateBackPropTestData( Dataset &data, Activity &targetActivity ) {
             data.xTrain[2][timeId][neuronId] = 1;
         }
     }
-    data.yTrain = std::vector<float>(3);
+    data.yTrain = std::vector<float>( 3 );
     data.yTrain[0] = 1;
     data.yTrain[1] = 0;
     data.yTrain[2] = 0.5;
-    targetActivity.expectedOutput = std::vector<float>(3);
+    targetActivity.expectedOutput = std::vector<float>( 3 );
     targetActivity.expectedOutput[0] = 1;
     targetActivity.expectedOutput[1] = 0;
     targetActivity.expectedOutput[2] = 0.5;
@@ -624,7 +637,7 @@ void GenerateBackPropTestData( Dataset &data, Activity &targetActivity ) {
 
 void GeneratePoissonSeries( std::vector<int> &data, int averageNumSpikes, int simulationTime ) {
     std::default_random_engine generator;
-    generator.seed( clock() );
+    generator.seed( clock());
     std::uniform_real_distribution<float> distribution( 0, 1 );
     if ( simulationTime == 0 ) {
         simulationTime = data.size();
@@ -633,35 +646,35 @@ void GeneratePoissonSeries( std::vector<int> &data, int averageNumSpikes, int si
     }
     float threshold = static_cast<float>(averageNumSpikes) / simulationTime;
     for ( int index = 0; index < simulationTime; ++index ) {
-        data[index] = static_cast<int>(distribution(generator) < threshold);
+        data[index] = static_cast<int>(distribution( generator ) < threshold);
     }
 
 }
 
 void ConvertMnistSampleToSpikes( const std::vector<int> &sample, SpikeTrain &converted, int simulationTime ) {
-    for (int pixelId = 0; pixelId < sample.size(); ++pixelId ) {
+    for ( int pixelId = 0; pixelId < sample.size(); ++pixelId ) {
         int averageNumSpikes = 2 + static_cast<int>(static_cast<float>(sample[pixelId]) / 255. * 4);
         GeneratePoissonSeries( converted[pixelId], averageNumSpikes );
     }
 }
 
 void ConvertMnistToSpikes( const MNIST::Dataset &mnist, Dataset &converted, int simulationTime ) {
-    converted.xTrain = std::vector<SpikeTrain>(mnist.xTrain.size());
+    converted.xTrain = std::vector<SpikeTrain>( mnist.xTrain.size());
     for ( int sampleId = 0; sampleId < mnist.xTrain.size(); ++sampleId ) {
-        converted.xTrain[sampleId] = SpikeTrain(mnist.xTrain[sampleId].size());
-        for (int pixelId = 0; pixelId < mnist.xTrain[sampleId].size(); ++pixelId ) {
+        converted.xTrain[sampleId] = SpikeTrain( mnist.xTrain[sampleId].size());
+        for ( int pixelId = 0; pixelId < mnist.xTrain[sampleId].size(); ++pixelId ) {
             int averageNumSpikes = 2 + static_cast<int>(static_cast<float>(mnist.xTrain[sampleId][pixelId]) / 255. * 4);
-            GeneratePoissonSeries(converted.xTrain[sampleId][pixelId], averageNumSpikes, simulationTime );
+            GeneratePoissonSeries( converted.xTrain[sampleId][pixelId], averageNumSpikes, simulationTime );
         }
     }
-    converted.xTest = std::vector<SpikeTrain>(mnist.xTest.size());
+    converted.xTest = std::vector<SpikeTrain>( mnist.xTest.size());
     for ( int sampleId = 0; sampleId < mnist.xTest.size(); ++sampleId ) {
-        converted.xTest[sampleId] = SpikeTrain(mnist.xTest[sampleId].size());
-        for (int pixelId = 0; pixelId < mnist.xTest[sampleId].size(); ++pixelId ) {
+        converted.xTest[sampleId] = SpikeTrain( mnist.xTest[sampleId].size());
+        for ( int pixelId = 0; pixelId < mnist.xTest[sampleId].size(); ++pixelId ) {
             int averageNumSpikes = 2 + static_cast<int>(static_cast<float>(mnist.xTest[sampleId][pixelId]) / 255. * 4);
-            GeneratePoissonSeries(converted.xTrain[sampleId][pixelId], averageNumSpikes, simulationTime );
+            GeneratePoissonSeries( converted.xTrain[sampleId][pixelId], averageNumSpikes, simulationTime );
         }
     }
-    converted.yTrain = std::vector<float>(mnist.yTrain);
-    converted.yTest = std::vector<float>(mnist.yTest);
+    converted.yTrain = std::vector<float>( mnist.yTrain );
+    converted.yTest = std::vector<float>( mnist.yTest );
 }
