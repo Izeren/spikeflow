@@ -83,6 +83,14 @@ void PreciseEventManager::RegisterSpikeEvent( const SPIKING_NN::Event &event ) {
 PreciseEventManager::PreciseEventManager() :
         spikeCounter( 0 ) {}
 
+
 BucketId PreciseEventManager::GetBucketId( SPIKING_NN::Time time ) {
     return static_cast<BucketId>(time / SPIKING_NN::TIME_STEP);
+}
+
+
+void PreciseEventManager::RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input ) {
+    for ( auto timingId = 0; timingId < sample.size(); ++timingId ) {
+        RegisterSpikeEvent( {sample[timingId], input[timingId], 0, SPIKING_NN::EventType::DELAYED_ACTIVATION} );
+    }
 }
