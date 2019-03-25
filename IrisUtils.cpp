@@ -20,7 +20,7 @@ void IRIS::ReadIris( const std::string &path, SPIKING_NN::Dataset &dataset ) {
             }
             allData.push_back( params );
         }
-        std::random_shuffle( allData.begin(), allData.end() );
+        std::random_shuffle( allData.begin(), allData.end());
         for ( auto params: allData ) {
             int target = 0;
             if ( params.back() == "Iris-versicolor" ) {
@@ -45,13 +45,35 @@ void IRIS::ReadIris( const std::string &path, SPIKING_NN::Dataset &dataset ) {
     }
 }
 
-std::vector<int> IRIS::ConvertSampleToSingularSpikes( const std::vector<float> &inputs ) {
-    return {
-            static_cast<int>(100 - 10 * inputs[0]),
-            static_cast<int>(100 - 10 * inputs[1]),
-            static_cast<int>(100 - 10 * inputs[2]),
-            static_cast<int>(100 - 10 * inputs[3])
-    };
+
+void IRIS::ConvertSamplesToTimings( std::vector<SPIKING_NN::Sample> &samples ) {
+    if ( samples.size() == 0 ) {
+        return;
+    }
+    std::vector<float> minValues( samples[0].size(), 0 );
+    for ( auto activationId = 0; activationId < samples[0].size(); ++activationId ) {
+        minValues[activationId] = samples[0][activationId];
+    }
+
+    for ( auto sampleId = 0; sampleId < samples.size(); ++sampleId ) {
+        for ( auto activationId = 0; activationId < samples[0].size(); ++activationId ) {
+            if ( samples[sampleId][activationId] < minValues[activationId] ) {
+                minValues[activationId] = samples[sampleId][activationId];
+            }
+        }
+    }
+    for ( auto sampleId = 0; sampleId < samples.size(); ++sampleId ) {
+        for ( auto activationId = 0; activationId < samples[0].size(); ++activationId ) {
+            float &activation = samples[sampleId][activationId];
+            activation += minValues[activationId] + 1;
+            activation = 1 / activation;
+        }
+    }
+}
+
+void IRIS::ConvertIrisToTimings( SPIKING_NN::Dataset &data ) {
+    ConvertSamplesToTimings( data.xTrain );
+    ConvertSamplesToTimings( data.xTest );
 }
 
 void IRIS::SaveSplit( const std::string &path, SPIKING_NN::Dataset &dataset ) {

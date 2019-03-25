@@ -13,7 +13,9 @@ namespace IRIS {
 
     void ReadIris( const std::string &path, SPIKING_NN::Dataset &dataset );
 
-    std::vector<int> ConvertSampleToSingularSpikes( const std::vector<float> &inputs );
+    void ConvertIrisToTimings( SPIKING_NN::Dataset &data );
+
+    void ConvertSamplesToTimings( std::vector<SPIKING_NN::Sample> &samples );
 
     void SaveSplit( const std::string &path, SPIKING_NN::Dataset &dataset );
 
