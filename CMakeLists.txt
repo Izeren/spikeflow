@@ -25,4 +25,5 @@ add_executable(
         IEventManager.h
         IrisUtils.h
         IrisUtils.cpp
-)
+        LifNetwork.cpp
+        LifNetwork.h)
