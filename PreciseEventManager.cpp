@@ -30,28 +30,31 @@
  */
 void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime ) {
     for ( BucketId bucketId = 0; bucketId * SPIKING_NN::TIME_STEP < simulationTime; ++bucketId ) {
+        if ( eventBuckets.find( bucketId ) == eventBuckets.end()) {
+            continue;
+        }
         for ( auto time_event: eventBuckets[bucketId] ) {
 
             SPIKING_NN::Event &event = time_event.second;
-            if ( event.type != SPIKING_NN::EventType::SCHEDULED_RELAXATION ) {
+            if ( event.type != SPIKING_NN::EVENT_TYPE::SCHEDULED_RELAXATION ) {
                 spikeCounter += 1;
             }
 
             INeuron &neuron = *event.neuronPtr;
             bool wasConsistent = neuron.IsConsistent();
-            if ( event.type == SPIKING_NN::EventType::INCOMING_SPIKE ) {
+            if ( event.type == SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE ) {
                 neuron.ProcessInputSpike( event.time, event.potential );
             }
 
             if ((wasConsistent && !neuron.IsConsistent()) ||
-                (event.type == SPIKING_NN::EventType::DELAYED_ACTIVATION)) {
+                (event.type == SPIKING_NN::EVENT_TYPE::DELAYED_ACTIVATION)) {
                 const ISynapses &synapses = neuron.GetOutputSynapses();
                 for ( ISynapse *synapse: synapses ) {
                     RegisterSpikeEvent( {
                                                 event.time + synapse->GetDelay(),
                                                 synapse->GetPostSynapticNeuron(),
                                                 synapse->GetStrength(),
-                                                SPIKING_NN::EventType::INCOMING_SPIKE
+                                                SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE
                                         } );
                 }
             }
@@ -62,7 +65,7 @@ void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime ) {
                                                 event.time + neuron.GetTRef(),
                                                 event.neuronPtr,
                                                 0,
-                                                SPIKING_NN::EventType::DELAYED_ACTIVATION
+                                                SPIKING_NN::EVENT_TYPE::DELAYED_ACTIVATION
                                         } );
                 }
             }
@@ -92,6 +95,10 @@ BucketId PreciseEventManager::GetBucketId( SPIKING_NN::Time time ) {
 
 void PreciseEventManager::RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input ) {
     for ( auto timingId = 0; timingId < sample.size(); ++timingId ) {
-        RegisterSpikeEvent( {sample[timingId], input[timingId], 0, SPIKING_NN::EventType::DELAYED_ACTIVATION} );
+        RegisterSpikeEvent( {sample[timingId], input[timingId], 0, SPIKING_NN::EVENT_TYPE::DELAYED_ACTIVATION} );
     }
+}
+
+size_t PreciseEventManager::GetSpikeCounter() const {
+    return spikeCounter;
 }
