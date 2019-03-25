@@ -68,6 +68,7 @@ void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime ) {
             }
         }
     }
+    eventBuckets.clear();
 }
 
 void PreciseEventManager::RegisterSpikeEvent( const SPIKING_NN::Event &event ) {

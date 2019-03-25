@@ -50,14 +50,13 @@ public:
 
     void RunSimulation( SPIKING_NN::Time time ) override;
 
-    void RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input) override;
+    void RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input ) override;
 
     PreciseEventManager();
 
     int spikeCounter;
 
 private:
-    int numberOfTimeBuckets;
     std::map<BucketId, SPIKING_NN::EventBucket> eventBuckets;
 
     BucketId GetBucketId( SPIKING_NN::Time time );
