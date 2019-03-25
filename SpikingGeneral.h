@@ -17,7 +17,7 @@ namespace SPIKING_NN {
      * for regular potential updates of neurons. The last is important
      * to calculate continuous leackages of neuron potential.
      */
-    const float TIME_STEP = 0.5;
+    const float TIME_STEP = 0.01;
 
 
     /**
@@ -65,10 +65,21 @@ namespace SPIKING_NN {
      * that's why it is important. (Also it is useful for output neuron
      * relaxation in sparse models)
      */
-    enum EventType {
+    enum EVENT_TYPE {
         INCOMING_SPIKE,
         DELAYED_ACTIVATION,
         SCHEDULED_RELAXATION
+    };
+
+
+    /**
+     * This enumeration is to distinguish different type of neurons on
+     * insertion to the network
+     */
+    enum NEURON_TYPE {
+        INPUT,
+        OUTPUT,
+        HIDDEN
     };
 
 
@@ -83,7 +94,7 @@ namespace SPIKING_NN {
         Time time;
         INeuron *neuronPtr;
         Potential potential;
-        EventType type;
+        EVENT_TYPE type;
     } Event;
 
     /**
