@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 
 class INeuron;
 
@@ -17,6 +18,13 @@ namespace SPIKING_NN {
      * to calculate continuous leackages of neuron potential.
      */
     const float TIME_STEP = 0.5;
+
+
+    /**
+     * This constant is used to check if there was no spikes on the
+     * output neuron.
+     */
+    const float EPS = 1e-5;
 
 
     /**
@@ -77,6 +85,68 @@ namespace SPIKING_NN {
         Potential potential;
         EventType type;
     } Event;
+
+    /**
+     * This is convenient mapping from time where event occurs to the all
+     * parameters of event
+     */
     typedef std::map<Time, Event> EventBucket;
+
+    /**
+     * Just a sample of data as vector of float numbers, size of vector
+     * should be the same as the number of input neurons, not less.
+     */
+    typedef std::vector<float> Sample;
+
+
+    /**
+     * For current version it is assumed that all the tasks are simple
+     * classification problems with integer class indices
+     */
+    typedef int Target;
+
+
+    /**
+     * This structure is responsible for aggregation of
+     * 1. Train part of samples
+     * 2. Train part of labels
+     * 3. Test part of samples
+     * 4. Test part of labels
+     */
+    typedef struct {
+        std::vector<Sample> xTrain;
+        std::vector<Target> yTrain;
+        std::vector<Sample> xTest;
+        std::vector<Target> yTest;
+    } Dataset;
+
+
+    /**
+     * This score is used for losses and quality metrics
+     */
+    typedef float Score;
+
+
+    /**
+     * This type is to denote aggregation of all activity on the output
+     * layer
+     */
+    typedef std::vector<float> Output;
+
+
+    /**
+     * This function type is common for different loss function and is
+     * used for abstract scoring implementation in @INetwork
+     */
+    typedef Score (*LossFunction)(std::vector<Output> &predictions, std::vector<Target>& labels);
+
+
+    /**
+     * It is aggregation of neuron to a group in the meaning of layer
+     * This is very convenient part of perceptron definition.
+     */
+    typedef std::vector<INeuron *> Layer;
+
+
 
 };
