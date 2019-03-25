@@ -83,6 +83,7 @@ LifNeuron::LifNeuron() {
     tau = 20;
     tps = -1;
     tOut = -1;
+    fts = -1;
     tRef = 3;
     consistent = true;
     grad = 0;
@@ -96,6 +97,7 @@ void LifNeuron::Reset() {
     a = 0;
     tps = -1;
     tOut = -1;
+    fts = -1
     consistent = true;
     grad = 0;
     DlDV = 0;
@@ -110,5 +112,16 @@ void LifNeuron::RelaxOutput( float time, bool withSpike ) {
     }
     if ( withSpike ) {
         tOut = time;
+        if ( fts < 0 ) {
+            fts = time;
+        }
+    }
+}
+
+float LifNeuron::GetOutput() {
+    if ( fts <= SPIKING_NN::EPS ) {
+        return 0;
+    } else {
+        return 1 / fts;
     }
 }

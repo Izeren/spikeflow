@@ -19,6 +19,8 @@ public:
 
     LifNeuron();
 
+    float GetOutput() override;
+
     bool IsConsistent();
 
     void NormalizePotential( SPIKING_NN::Time time ) override;
@@ -35,6 +37,7 @@ protected:
     SPIKING_NN::Time tau;
     SPIKING_NN::Time tps;
     SPIKING_NN::Time tOut;
+    SPIKING_NN::Time fts;
 
     float grad;
     float sigma_mu;

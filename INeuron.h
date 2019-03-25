@@ -19,6 +19,8 @@ public:
 
     virtual ~INeuron();
 
+    virtual float GetOutput() = 0;
+
     const ISynapses &GetInputSynapses() const;
 
     const ISynapses &GetOutputSynapses() const;
