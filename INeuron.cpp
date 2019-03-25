@@ -22,11 +22,11 @@ void INeuron::AddOutputSynapse( ISynapse *synapse ) {
 }
 
 INeuron::~INeuron() {
-    for ( auto synapse: inputSynapses ) {
-        delete synapse;
+    while ( !inputSynapses.empty() ) {
+        delete *inputSynapses.begin();
     }
-    for ( auto synapse: outputSynapses ) {
-        delete synapse;
+    while ( !outputSynapses.empty() ) {
+        delete *outputSynapses.begin();
     }
 }
 
