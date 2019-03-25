@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SpikingGeneral.h"
+#include "IEventManager.h"
 #include <queue>
 
 
@@ -44,18 +44,21 @@ typedef size_t BucketId;
  * in [t1, t2], where t2 - t1 == @SPIKING_NN::TIME_STEP and the whole
  * timeline is splitted into those buckets.
  */
-class PreciseEventManager {
+class PreciseEventManager : public IEventManager {
 public:
     void RegisterSpikeEvent( const SPIKING_NN::Event &event );
 
-    void RunSimulation(SPIKING_NN::Time time);
+    void RunSimulation( SPIKING_NN::Time time ) override;
 
-    PreciseEventManager( );
+    void RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input) override;
+
+    PreciseEventManager();
 
     int spikeCounter;
 
 private:
     int numberOfTimeBuckets;
     std::map<BucketId, SPIKING_NN::EventBucket> eventBuckets;
-    BucketId GetBucketId(SPIKING_NN::Time time);
+
+    BucketId GetBucketId( SPIKING_NN::Time time );
 };
