@@ -23,7 +23,7 @@ void LifNeuron::ProcessInputSpike( float time, float potential ) {
     this->potential = this->potential * leackyFactor + potential * wDyn;
     tps = time;
     spikeCounter += 1;
-    if (this->potential > -this->vMaxThresh) {
+    if (this->potential < -this->vMaxThresh) {
         this->potential = -this->vMaxThresh;
     }
     consistent = (this->potential < this->vMaxThresh);
@@ -54,7 +54,7 @@ void LifNeuron::NormalizePotential( float time ) {
 void LifNeuron::Backward( float sumA ) {
     float totalStrength = 0;
     for ( auto synapse: outputSynapses ) {
-        if ( dynamic_cast<Synapse *>(synapse)->isUpdatable()) {
+        if ( dynamic_cast<Synapse *>(synapse)->IsUpdatable()) {
             totalStrength += synapse->GetStrength() /
                              dynamic_cast<LifNeuron *>(synapse->GetPostSynapticNeuron())->vMaxThresh;
         }
@@ -62,12 +62,12 @@ void LifNeuron::Backward( float sumA ) {
     grad = 0;
     for ( ISynapse *outputSynapse: outputSynapses ) {
         auto outputSynapsePtr = dynamic_cast<Synapse *>(outputSynapse);
-        if ( !(outputSynapsePtr->isUpdatable())) {
+        if ( !(outputSynapsePtr->IsUpdatable())) {
             continue;
         }
         auto next = dynamic_cast<LifNeuron *>(outputSynapsePtr->GetPostSynapticNeuron());
         grad += next->grad * outputSynapsePtr->GetStrength();
-        outputSynapsePtr->setDlDw( next->grad * a );
+        outputSynapsePtr->SetDlDw( next->grad * a );
     }
 //    DlDV = grad * (-(1 + sigma_mu) * a + sigma_mu * sumA) / vMaxThresh;
     DlDV = 0;
@@ -77,6 +77,7 @@ void LifNeuron::Backward( float sumA ) {
 
 LifNeuron::LifNeuron() {
     outputSynapses = std::unordered_set<ISynapse *>();
+    inputSynapses = std::unordered_set<ISynapse *>();
     potential = 0;
     a = 0;
     vMaxThresh = 10;
@@ -97,7 +98,7 @@ void LifNeuron::Reset() {
     a = 0;
     tps = -1;
     tOut = -1;
-    fts = -1
+    fts = -1;
     consistent = true;
     grad = 0;
     DlDV = 0;
