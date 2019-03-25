@@ -1,7 +1,7 @@
 #include "IrisUtils.h"
 #include <string>
 
-void IRIS::ReadIris( const std::string &path, Dataset &dataset ) {
+void IRIS::ReadIris( const std::string &path, SPIKING_NN::Dataset &dataset ) {
     std::ifstream file( path );
     std::vector<std::vector<std::string> > allData;
     if ( file.is_open()) {
@@ -29,13 +29,13 @@ void IRIS::ReadIris( const std::string &path, Dataset &dataset ) {
                 target = 2;
             }
             if ( distribution( generator ) < valProbability ) {
-                dataset.xTest.push_back( std::vector<float>());
+                dataset.xTest.emplace_back( std::vector<float>());
                 dataset.yTest.push_back( target );
                 for ( int paramId = 0; paramId < params.size() - 1; ++paramId ) {
                     dataset.xTest.back().push_back( static_cast<float>(atof( params[paramId].c_str())));
                 }
             } else {
-                dataset.xTrain.push_back( std::vector<float>());
+                dataset.xTrain.emplace_back( std::vector<float>());
                 dataset.yTrain.push_back( target );
                 for ( int paramId = 0; paramId < params.size() - 1; ++paramId ) {
                     dataset.xTrain.back().push_back( static_cast<float>(atof( params[paramId].c_str())));
@@ -54,7 +54,7 @@ std::vector<int> IRIS::ConvertSampleToSingularSpikes( const std::vector<float> &
     };
 }
 
-void IRIS::SaveSplit( const std::string &path, IRIS::Dataset &dataset ) {
+void IRIS::SaveSplit( const std::string &path, SPIKING_NN::Dataset &dataset ) {
     std::ofstream file( path );
     file << dataset.xTrain.size() << "\n";
     for ( int sampleId = 0; sampleId < dataset.xTrain.size(); ++sampleId ) {
