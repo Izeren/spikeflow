@@ -17,9 +17,9 @@ void INetwork::Forward( const SPIKING_NN::Sample &sample, std::vector<float> &ou
 
 SPIKING_NN::Score INetwork::ScoreModel( SPIKING_NN::Dataset &data, SPIKING_NN::LossFunction lossFunction, bool onTest,
                                         SPIKING_NN::Time time ) {
-    std::vector<SPIKING_NN::Output> predictions;
     std::vector<SPIKING_NN::Sample> &samples = (onTest ? data.xTest : data.xTrain);
     std::vector<SPIKING_NN::Target> &labels = (onTest ? data.yTest : data.yTrain);
+    std::vector<SPIKING_NN::Output> predictions(samples.size());
     for ( int sampleId = 0; sampleId < samples.size(); ++sampleId ) {
         Forward( samples[sampleId], predictions[sampleId], time );
     }
