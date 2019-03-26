@@ -67,30 +67,30 @@ const int SIMULATION_TIME = 50;
 //void PrintVector( const std::vector<T> &vector );
 
 
-int main() {
-//    TestForward();
-//    TestBackProp();
-
-    SPIKING_NN::Dataset data;
-    IRIS::ReadIris( "/home/izeren/CLionProjects/SpikeProp/mnist_data", data );
-    IRIS::ConvertIrisToTimings( data );
-
-    auto model = LifNetwork( INPUT_SIZE, OUTPUT_SIZE );
-
-    model.AddLink( 0, 1, 100, 0.1 );
-    model.AddLink( 0, 2, 100, 0.15 );
-    model.AddLink( 0, 3, 100, 0.05 );
-    model.AddLink( 0, 4, 100, 0.2 );
-
-    std::vector<float> output( OUTPUT_SIZE );
-
-    model.Forward( {0.5, 100, 100, 100}, output, 4 );
-
-    for ( auto activation: output ) {
-        std::cout << activation << " ";
-    }
-    std::cout << "\n";
-}
+//int main() {
+////    TestForward();
+////    TestBackProp();
+//
+//    SPIKING_NN::Dataset data;
+//    IRIS::ReadIris( "/home/izeren/CLionProjects/SpikeProp/mnist_data", data );
+//    IRIS::ConvertIrisToTimings( data );
+//
+//    auto model = LifNetwork( INPUT_SIZE, OUTPUT_SIZE );
+//
+//    model.AddLink( 0, 1, 100, 0.1 );
+//    model.AddLink( 0, 2, 100, 0.15 );
+//    model.AddLink( 0, 3, 100, 0.05 );
+//    model.AddLink( 0, 4, 100, 0.2 );
+//
+//    std::vector<float> output( OUTPUT_SIZE );
+//
+//    model.Forward( {0.5, 100, 100, 100}, output, 4 );
+//
+//    for ( auto activation: output ) {
+//        std::cout << activation << " ";
+//    }
+//    std::cout << "\n";
+//}
 
 
 //void createSynapses( Layer &layer1, Layer &layer2,
