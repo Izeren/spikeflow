@@ -35,6 +35,8 @@ public:
 
 protected:
 
+    virtual void Reset() = 0;
+
     SPIKING_NN::Layer input;
     SPIKING_NN::Layer output;
 

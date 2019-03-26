@@ -8,20 +8,21 @@
 
 class LifNetwork : public INetwork {
 public:
-    LifNetwork( size_t inputSize = 0, size_t outputSize = 0 );
+    explicit LifNetwork( size_t inputSize = 0, size_t outputSize = 0 );
 
-    ~LifNetwork();
+    ~LifNetwork() override;
 
-    virtual void AddNeuron( size_t neuronId, SPIKING_NN::NEURON_TYPE neuronType ) override;
+    void AddNeuron( size_t neuronId, SPIKING_NN::NEURON_TYPE neuronType ) override;
 
-    virtual void
-    AddLink( size_t preSynapticNeuronId, size_t postSynapticNeuronId, SPIKING_NN::Strength strength,
-             SPIKING_NN::Time delay ) override;
+    void AddLink( size_t preSynapticNeuronId, size_t postSynapticNeuronId, SPIKING_NN::Strength strength,
+                  SPIKING_NN::Time delay ) override;
 
 
 protected:
     std::map<size_t, INeuron *> neuronMap;
     size_t size;
+
+    void Reset() override;
 
 
 };

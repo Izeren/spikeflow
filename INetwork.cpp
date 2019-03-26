@@ -13,6 +13,7 @@ void INetwork::Forward( const SPIKING_NN::Sample &sample, std::vector<float> &ou
     for ( int neuronId = 0; neuronId < output.size(); ++neuronId ) {
         output[neuronId] = this->output[neuronId]->GetOutput();
     }
+    Reset();
 }
 
 SPIKING_NN::Score INetwork::ScoreModel( SPIKING_NN::Dataset &data, SPIKING_NN::LossFunction lossFunction, bool onTest,

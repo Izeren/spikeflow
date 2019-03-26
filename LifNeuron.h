@@ -11,7 +11,7 @@ class LifNeuron : public INeuron {
 public:
     void ProcessInputSpike( SPIKING_NN::Time time, SPIKING_NN::Potential potential ) override;
 
-    void Reset();
+    void Reset() override;
 
     LifNeuron( SPIKING_NN::Potential v, SPIKING_NN::Potential a, SPIKING_NN::Potential vMinThresh,
                SPIKING_NN::Potential vMaxThresh, SPIKING_NN::Time tau, SPIKING_NN::Time tps, SPIKING_NN::Time tOut,

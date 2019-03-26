@@ -21,6 +21,8 @@ public:
 
     virtual float GetOutput() = 0;
 
+    virtual void Reset() = 0;
+
     const ISynapses &GetInputSynapses() const;
 
     const ISynapses &GetOutputSynapses() const;

@@ -48,3 +48,9 @@ LifNetwork::~LifNetwork() {
     }
     delete eventManager;
 }
+
+void LifNetwork::Reset() {
+    for ( auto id_ptr: neuronMap ) {
+        id_ptr.second->Reset();
+    }
+}
