@@ -25,3 +25,11 @@ SPIKING_NN::Score INetwork::ScoreModel( SPIKING_NN::Dataset &data, SPIKING_NN::L
     }
     return lossFunction( predictions, labels );
 }
+
+IEventManager *INetwork::GetEventManager() const {
+    return eventManager;
+}
+
+void INetwork::SetEventManager( IEventManager *eventManager ) {
+    INetwork::eventManager = eventManager;
+}

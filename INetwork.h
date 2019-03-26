@@ -28,6 +28,10 @@ public:
     virtual SPIKING_NN::Score
     ScoreModel( SPIKING_NN::Dataset &data, SPIKING_NN::LossFunction function, bool onTest, SPIKING_NN::Time time );
 
+    IEventManager *GetEventManager() const;
+
+    void SetEventManager( IEventManager *eventManager );
+
 
 protected:
 
