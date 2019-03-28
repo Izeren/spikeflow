@@ -17,11 +17,11 @@ public:
 
     virtual ~INetwork() = default;
 
-    virtual void AddNeuron( size_t neuronId, SPIKING_NN::NEURON_TYPE neuronType ) = 0;
+    virtual void AddNeuron( INeuron *neuronPtr, size_t neuronId, SPIKING_NN::NEURON_TYPE neuronType );
 
     virtual void
-    AddLink( size_t preSynapticNeuronId, size_t postSynapticNeuronId, SPIKING_NN::Strength strength,
-             SPIKING_NN::Time delay ) = 0;
+    AddLink( ISynapse *synapsePtr, size_t preSynapticNeuronId, size_t postSynapticNeuronId,
+             SPIKING_NN::Strength strength, SPIKING_NN::Time delay );
 
     virtual void Forward( const SPIKING_NN::Sample &sample, std::vector<float> &output, SPIKING_NN::Time time );
 
@@ -39,6 +39,7 @@ protected:
 
     SPIKING_NN::Layer input;
     SPIKING_NN::Layer output;
+    std::map<size_t, INeuron *> neuronMap;
 
     IEventManager *eventManager;
 

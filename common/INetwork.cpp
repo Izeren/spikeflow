@@ -4,6 +4,7 @@
 
 #include "INetwork.h"
 #include "INeuron.h"
+#include "ISynapse.h"
 #include "IEventManager.h"
 
 void INetwork::Forward( const SPIKING_NN::Sample &sample, std::vector<float> &output, SPIKING_NN::Time time ) {
@@ -33,4 +34,27 @@ IEventManager *INetwork::GetEventManager() const {
 
 void INetwork::SetEventManager( IEventManager *eventManager ) {
     INetwork::eventManager = eventManager;
+}
+
+void INetwork::AddNeuron( INeuron *neuronPtr, size_t neuronId, SPIKING_NN::NEURON_TYPE neuronType ) {
+    if ( neuronMap.find( neuronId ) == neuronMap.end()) {
+        neuronMap[neuronId] = neuronPtr;
+        if ( neuronType == SPIKING_NN::NEURON_TYPE::INPUT ) {
+            input.push_back( neuronPtr );
+        } else if ( neuronType == SPIKING_NN::NEURON_TYPE::OUTPUT ) {
+            output.push_back( neuronPtr );
+        }
+    }
+}
+
+void INetwork::AddLink( ISynapse *synapsePtr, size_t preSynapticNeuronId, size_t postSynapticNeuronId,
+                        SPIKING_NN::Strength strength, SPIKING_NN::Time delay ) {
+    INeuron *prev = neuronMap[preSynapticNeuronId];
+    INeuron *next = neuronMap[postSynapticNeuronId];
+    prev->AddOutputSynapse( synapsePtr );
+    next->AddInputSynapse( synapsePtr );
+    synapsePtr->SetStrength( strength );
+    synapsePtr->SetDelay( delay );
+    synapsePtr->SetPreSynapticNeuron( prev );
+    synapsePtr->SetPostSynapticNeuron( next );
 }
