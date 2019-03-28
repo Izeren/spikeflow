@@ -24,6 +24,7 @@ set(
         common/ISynapse.cpp
         common/INetwork.h
         common/INetwork.cpp
+        common/BasicNetwork.hpp
         common/IEventManager.h
         common/IEventManager.cpp
 )
@@ -44,12 +45,11 @@ add_executable(
         Synapse.h
         LifNeuron.cpp
         Synapse.cpp
-        LifNetwork.cpp
-        LifNetwork.h
 )
 
-target_link_libraries( SpikeProp Common )
 target_link_libraries( DatasetUtils Common )
+
+target_link_libraries( SpikeProp Common )
 target_link_libraries( SpikeProp DatasetUtils )
 target_link_libraries( SpikeProp EventManagers )
 

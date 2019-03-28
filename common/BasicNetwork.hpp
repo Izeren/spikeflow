@@ -8,9 +8,9 @@
 
 
 template<class Neuron, class Synapse, class EventManager>
-class LifNetwork : public INetwork {
+class BasicNetwork : public INetwork {
 public:
-    explicit LifNetwork( size_t inputSize = 0, size_t outputSize = 0 ) {
+    explicit BasicNetwork( size_t inputSize = 0, size_t outputSize = 0 ) {
         size = 0;
         for ( auto neuronId = 0; neuronId < inputSize; ++neuronId ) {
             AddNeuron( size++, SPIKING_NN::NEURON_TYPE::INPUT );
@@ -21,7 +21,7 @@ public:
         eventManager = new EventManager();
     }
 
-    ~LifNetwork() override {
+    ~BasicNetwork() override {
         for ( auto id_ptr: neuronMap ) {
             delete id_ptr.second;
         }
