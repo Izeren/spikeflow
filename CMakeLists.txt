@@ -40,16 +40,36 @@ set (
 include_directories( event_managers )
 add_library( EventManagers SHARED ${EVENT_MANAGER_FILES} )
 
-add_executable(
-        SpikeProp main.cpp
-        Synapse.h
-        LifNeuron.cpp
-        Synapse.cpp
+
+set (
+        SYNAPSE_FILES
+        synapses/Synapse.h
+        synapses/Synapse.cpp
 )
+include_directories( synapses )
+add_library( Synapses SHARED ${SYNAPSE_FILES} )
+
+
+set (
+        NEURON_FILES
+        neurons/LifNeuron.h
+        neurons/LifNeuron.cpp
+)
+include_directories( neurons )
+add_library( Neurons SHARED ${NEURON_FILES} )
+
+
+add_executable( SpikeProp main.cpp )
+
 
 target_link_libraries( DatasetUtils Common )
+target_link_libraries( Synapses Common )
+target_link_libraries( Neurons Common )
+target_link_libraries( EventManagers Common )
 
 target_link_libraries( SpikeProp Common )
 target_link_libraries( SpikeProp DatasetUtils )
 target_link_libraries( SpikeProp EventManagers )
+target_link_libraries( SpikeProp Synapses )
+target_link_libraries( SpikeProp Neurons )
 
