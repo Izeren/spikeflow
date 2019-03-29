@@ -27,6 +27,10 @@ public:
 
     void SetPostSynapticNeuron( INeuron *postSynapticNeuron );
 
+    virtual void RegisterPreSynapticSpike( SPIKING_NN::Time time );
+
+    virtual void RegisterPostSynapticSpike( SPIKING_NN::Time time );
+
 protected:
     SPIKING_NN::Strength strength;
 public:

@@ -28,7 +28,7 @@
  * If neuron is inconsistent after normalization, DELAYED_ACTIVATION will be
  * registered after its refractory period.
  */
-void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime ) {
+void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime, bool useSTDP ) {
     for ( BucketId bucketId = 0; bucketId * SPIKING_NN::TIME_STEP < simulationTime; ++bucketId ) {
         if ( eventBuckets.find( bucketId ) == eventBuckets.end()) {
             continue;
@@ -56,6 +56,15 @@ void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime ) {
                                                 synapse->GetStrength(),
                                                 SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE
                                         } );
+                }
+                if ( useSTDP ) {
+                    const ISynapses &inputSynapses = neuron.GetInputSynapses();
+                    for ( ISynapse *synapse: inputSynapses ) {
+                        synapse->RegisterPostSynapticSpike( event.time );
+                    }
+                    for ( ISynapse *synapse: synapses ) {
+                        synapse->RegisterPreSynapticSpike( event.time );
+                    }
                 }
             }
             if ( wasConsistent && !neuron.IsConsistent()) {

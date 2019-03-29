@@ -15,6 +15,8 @@ class IEventManager;
 class INetwork {
 public:
 
+    INetwork( bool useSTDP = true );
+
     virtual ~INetwork() = default;
 
     virtual void AddNeuron( INeuron *neuronPtr, size_t neuronId, SPIKING_NN::NEURON_TYPE neuronType );
@@ -42,5 +44,6 @@ protected:
     std::map<size_t, INeuron *> neuronMap;
 
     IEventManager *eventManager;
+    bool useSTDP;
 
 };

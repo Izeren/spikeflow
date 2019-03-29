@@ -53,3 +53,7 @@ void ISynapse::SetStrength( SPIKING_NN::Strength strength ) {
 void ISynapse::SetDelay( SPIKING_NN::Time delay ) {
     ISynapse::delay = delay;
 }
+
+void ISynapse::RegisterPreSynapticSpike( SPIKING_NN::Time time ) {}
+
+void ISynapse::RegisterPostSynapticSpike( SPIKING_NN::Time time ) {}

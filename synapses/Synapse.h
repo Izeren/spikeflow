@@ -25,6 +25,10 @@ public:
 
     void SetDlDw( float DlDw );
 
+    void RegisterPreSynapticSpike( SPIKING_NN::Time time ) override;
+
+    void RegisterPostSynapticSpike( SPIKING_NN::Time time ) override;
+
 protected:
     bool updatable;
 };

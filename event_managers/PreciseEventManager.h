@@ -48,7 +48,7 @@ class PreciseEventManager : public IEventManager {
 public:
     void RegisterSpikeEvent( const SPIKING_NN::Event &event );
 
-    void RunSimulation( SPIKING_NN::Time time ) override;
+    void RunSimulation( SPIKING_NN::Time time, bool useSTDP ) override;
 
     size_t GetSpikeCounter() const;
 

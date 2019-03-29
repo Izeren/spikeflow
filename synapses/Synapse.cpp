@@ -1,5 +1,6 @@
 #include "Synapse.h"
 #include "INeuron.h"
+#include <iostream>
 
 Synapse::Synapse( bool _isUpdatable, float _strength, float _delay,
         INeuron *_previous, INeuron *_next ) :
@@ -31,4 +32,12 @@ float Synapse::GetDlDw() const {
 
 void Synapse::SetDlDw( float DlDw ) {
     Synapse::DlDw = DlDw;
+}
+
+void Synapse::RegisterPreSynapticSpike( SPIKING_NN::Time time ) {
+    std::cout << "Registered presynaptic at time: " << time << "\n";
+}
+
+void Synapse::RegisterPostSynapticSpike( SPIKING_NN::Time time ) {
+    std::cout << "Registered postsynaptic at time: " << time << "\n";
 }
