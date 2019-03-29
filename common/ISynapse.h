@@ -7,6 +7,15 @@ class INeuron;
 class ISynapse {
 
 public:
+
+    static SPIKING_NN::Strength outputSpikeStrength;
+
+    static SPIKING_NN::Strength inputSpikeStrength;
+
+    static SPIKING_NN::Time tauOutput;
+
+    static SPIKING_NN::Time tauInput;
+
     ISynapse( SPIKING_NN::Strength _strength, SPIKING_NN::Time _delay );
 
     explicit ISynapse( SPIKING_NN::Strength strength = 1.0, SPIKING_NN::Time delay = 1.0,
@@ -31,6 +40,11 @@ public:
 
     virtual void RegisterPostSynapticSpike( SPIKING_NN::Time time );
 
+    static SPIKING_NN::Strength GetPreSynapticUpdateStrength( SPIKING_NN::Strength strength );
+
+    static SPIKING_NN::Strength GetPostSynapticUpdateStrength( SPIKING_NN::Strength strength );
+
+
 protected:
     SPIKING_NN::Strength strength;
 public:
@@ -42,5 +56,10 @@ protected:
     SPIKING_NN::Time delay;
     INeuron *preSynapticNeuron;
     INeuron *postSynapticNeuron;
+
+    SPIKING_NN::Potential inputTrace;
+    SPIKING_NN::Potential outputTrace;
+    SPIKING_NN::Time inputRelaxation;
+    SPIKING_NN::Time outputRelaxation;
 
 };

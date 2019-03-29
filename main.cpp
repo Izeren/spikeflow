@@ -12,7 +12,7 @@ const int OUTPUT_SIZE = 4;
 
 int main() {
 
-    auto model = BasicNetwork<LifNeuron, Synapse, PreciseEventManager>( INPUT_SIZE, OUTPUT_SIZE, false );
+    auto model = BasicNetwork<LifNeuron, Synapse, PreciseEventManager>( INPUT_SIZE, OUTPUT_SIZE, true );
 
     model.AddLink( 0, 1, 100, 0.1 );
     model.AddLink( 0, 2, 100, 0.15 );

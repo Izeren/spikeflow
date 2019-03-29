@@ -3,8 +3,8 @@
 #include <iostream>
 
 Synapse::Synapse( bool _isUpdatable, float _strength, float _delay,
-        INeuron *_previous, INeuron *_next ) :
-        ISynapse(_strength, _delay, _previous, _next) {
+                  INeuron *_previous, INeuron *_next ) :
+        ISynapse( _strength, _delay, _previous, _next ) {
     updatable = _isUpdatable;
     DaDx = 0;
     DlDw = 0;
@@ -36,8 +36,10 @@ void Synapse::SetDlDw( float DlDw ) {
 
 void Synapse::RegisterPreSynapticSpike( SPIKING_NN::Time time ) {
     std::cout << "Registered presynaptic at time: " << time << "\n";
+    ISynapse::RegisterPreSynapticSpike( time );
 }
 
 void Synapse::RegisterPostSynapticSpike( SPIKING_NN::Time time ) {
     std::cout << "Registered postsynaptic at time: " << time << "\n";
+    ISynapse::RegisterPostSynapticSpike( time );
 }
