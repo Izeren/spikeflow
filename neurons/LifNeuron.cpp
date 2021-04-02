@@ -26,7 +26,7 @@ void LifNeuron::ProcessInputSpike( float time, float potential ) {
     if (this->potential < -this->vMaxThresh) {
         this->potential = -this->vMaxThresh;
     }
-    consistent = (this->potential < this->vMaxThresh);
+    this->consistent = (this->potential < this->vMaxThresh);
 }
 
 LifNeuron::LifNeuron( float v, float a, float vMinThresh,

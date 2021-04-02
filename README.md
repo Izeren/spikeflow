@@ -7,7 +7,7 @@ spectrum of possible experiments.
 
 It is not easy task to fix architecture now, making it fast enough and the same time as flexible as it can be. 
 Current implementation is targeted on experiments which can have multiple synaptic links with different time
-delays and also recurrent architectures, that's why I prefer to use 
+delays and also recurrent architectures, that's why I prefer to use event driven logic. 
 
 ## Event driven logic
 
