@@ -1,6 +1,3 @@
-//
-// Created by izeren on 3/22/19.
-//
 #pragma once
 
 #include <vector>
@@ -22,7 +19,7 @@ public:
     virtual void AddNeuron( INeuron *neuronPtr, size_t neuronId, SPIKING_NN::NEURON_TYPE neuronType );
 
     virtual void
-    AddLink( ISynapse *synapsePtr, size_t preSynapticNeuronId, size_t postSynapticNeuronId,
+    AddLink( size_t preSynapticNeuronId, size_t postSynapticNeuronId,
              SPIKING_NN::Strength strength, SPIKING_NN::Time delay );
 
     virtual void Forward( const SPIKING_NN::Sample &sample, std::vector<float> &output, SPIKING_NN::Time time );

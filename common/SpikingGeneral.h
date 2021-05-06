@@ -2,6 +2,7 @@
 
 #include <map>
 #include <vector>
+#include <iomanip>
 
 class INeuron;
 
@@ -82,6 +83,10 @@ namespace SPIKING_NN {
         HIDDEN
     };
 
+    typedef struct {
+        Time time;
+        INeuron *neuronPtr;
+    } EventKey;
 
     /**
      * This structure is responsible for aggregation of
@@ -91,17 +96,19 @@ namespace SPIKING_NN {
      * 4. The type of event which is described in @EventType
      */
     typedef struct {
-        Time time;
-        INeuron *neuronPtr;
         Potential potential;
         EVENT_TYPE type;
-    } Event;
+
+    } EventValue;
+
 
     /**
      * This is convenient mapping from time where event occurs to the all
      * parameters of event
      */
-    typedef std::map<Time, Event> EventBucket;
+    typedef std::map<EventKey, EventValue> EventBucket;
+
+    bool operator<( const EventKey &key1, const EventKey &key2 );
 
     /**
      * Just a sample of data as vector of float numbers, size of vector
@@ -109,12 +116,17 @@ namespace SPIKING_NN {
      */
     typedef std::vector<float> Sample;
 
+    /**
+     * TODO: Fill comment on spike trains
+     */
+    typedef std::vector<std::vector<Time> > SpikeTrain;
+
 
     /**
      * For current version it is assumed that all the tasks are simple
      * classification problems with integer class indices
      */
-    typedef int Target;
+    typedef float Target;
 
 
     /**
@@ -130,6 +142,21 @@ namespace SPIKING_NN {
         std::vector<Sample> xTest;
         std::vector<Target> yTest;
     } Dataset;
+
+    /**
+     * This structure is responsible for aggregation of
+     * 1. Train part of samples
+     * 2. Train part of labels
+     * 3. Test part of samples
+     * 4. Test part of labels
+     * for spike trains
+     */
+    typedef struct {
+        std::vector<SpikeTrain> xTrain;
+        std::vector<Target> yTrain;
+        std::vector<SpikeTrain> xTest;
+        std::vector<Target> yTest;
+    } SpikeTrainDataset;
 
 
     /**
@@ -149,8 +176,7 @@ namespace SPIKING_NN {
      * This function type is common for different loss function and is
      * used for abstract scoring implementation in @INetwork
      */
-    typedef Score (*LossFunction)(std::vector<Output> &predictions, std::vector<Target>& labels);
-
+    typedef Score (*LossFunction)( std::vector<Output> &predictions, std::vector<Target> &labels );
 
     /**
      * It is aggregation of neuron to a group in the meaning of layer
@@ -159,5 +185,8 @@ namespace SPIKING_NN {
     typedef std::vector<INeuron *> Layer;
 
 
-
 };
+
+std::ostream &operator<<( std::ostream &out, const SPIKING_NN::EventValue &event );
+
+SPIKING_NN::EventValue operator+( const SPIKING_NN::EventValue &left, const SPIKING_NN::EventValue &right );

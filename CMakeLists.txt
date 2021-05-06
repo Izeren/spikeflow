@@ -9,7 +9,7 @@ set(
         dataset_utils/IrisUtils.h
         dataset_utils/IrisUtils.cpp
         dataset_utils/MnistUtils.hpp
-)
+        dataset_utils/DataCommon.cpp dataset_utils/DataCommon.h)
 include_directories( dataset_utils )
 add_library( DatasetUtils SHARED ${DATASET_UTILS_FILES})
 
@@ -20,14 +20,13 @@ set(
         common/SpikingGeneral.cpp
         common/INeuron.h
         common/INeuron.cpp
-        common/ISynapse.h
-        common/ISynapse.cpp
+        synapses/ISynapse.h
+        synapses/ISynapse.cpp
         common/INetwork.h
         common/INetwork.cpp
         common/BasicNetwork.hpp
         common/IEventManager.h
-        common/IEventManager.cpp
-)
+        stats/LayerStats.cpp stats/LayerStats.h stats/Stat.h layers/ILayer.cpp layers/ILayer.h losses/ILossFunction.cpp losses/ILossFunction.h layers/DenseLifLayer.cpp layers/DenseLifLayer.h neurons/INeuronBuilder.h layers/DenseVanillaLayer.cpp layers/DenseVanillaLayer.h common/scripts/DemoScripts.cpp common/scripts/DemoScripts.h)
 include_directories( common )
 add_library( Common SHARED ${COMMON_UTILS_FILES})
 
@@ -43,9 +42,9 @@ add_library( EventManagers SHARED ${EVENT_MANAGER_FILES} )
 
 set (
         SYNAPSE_FILES
-        synapses/Synapse.h
-        synapses/Synapse.cpp
-)
+        synapses/LifSynapse.h
+        synapses/LifSynapse.cpp
+        synapses/BasicSynapse.cpp synapses/BasicSynapse.h synapses/ISynapseBuilder.h synapses/LifSynapseBuilder.cpp synapses/LifSynapseBuilder.h synapses/ISynapseBuilder.cpp synapses/VanillaSynapseBuilder.cpp synapses/VanillaSynapseBuilder.h)
 include_directories( synapses )
 add_library( Synapses SHARED ${SYNAPSE_FILES} )
 
@@ -54,7 +53,7 @@ set (
         NEURON_FILES
         neurons/LifNeuron.h
         neurons/LifNeuron.cpp
-)
+        neurons/BasicNeuron.cpp neurons/BasicNeuron.h neurons/LifNeuronBuilder.cpp neurons/LifNeuronBuilder.h neurons/BasicNeuronBuilder.cpp neurons/BasicNeuronBuilder.h)
 include_directories( neurons )
 add_library( Neurons SHARED ${NEURON_FILES} )
 

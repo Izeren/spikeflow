@@ -2,23 +2,32 @@
 
 #include "SpikingGeneral.h"
 
+
 class INeuron;
 
 class ISynapse {
 
 public:
 
-    static SPIKING_NN::Strength outputSpikeStrength;
+    const static SPIKING_NN::Time DEFAULT_SYNAPSE_DELAY;
+    const static SPIKING_NN::Strength DEFAULT_SYNAPSE_STRENGTH;
+    const static SPIKING_NN::Strength DEFAULT_LATERAL_SYNAPSE_STRENGTH;
+    const static bool DEFAULT_SYNAPSE_UPDATABILITY;
 
-    static SPIKING_NN::Strength inputSpikeStrength;
 
-    static SPIKING_NN::Time tauOutput;
+    const static SPIKING_NN::Strength outputSpikeStrength;
 
-    static SPIKING_NN::Time tauInput;
+    const static SPIKING_NN::Strength inputSpikeStrength;
 
-    ISynapse( SPIKING_NN::Strength _strength, SPIKING_NN::Time _delay );
+    const static SPIKING_NN::Time tauOutput;
 
-    explicit ISynapse( SPIKING_NN::Strength strength = 1.0, SPIKING_NN::Time delay = 1.0,
+    const static SPIKING_NN::Time tauInput;
+
+    ISynapse( bool _isUpdatable, SPIKING_NN::Strength _strength, SPIKING_NN::Time _delay );
+
+    explicit ISynapse( bool _isUpdatable = DEFAULT_SYNAPSE_UPDATABILITY,
+                       SPIKING_NN::Strength strength = DEFAULT_SYNAPSE_STRENGTH,
+                       SPIKING_NN::Time delay = ISynapse::DEFAULT_SYNAPSE_DELAY,
                        INeuron *preSynapticNeuron = nullptr,
                        INeuron *postSynapticNeuron = nullptr );
 
@@ -27,6 +36,16 @@ public:
     virtual SPIKING_NN::Strength GetStrength();
 
     virtual ~ISynapse();
+
+    virtual void GradStep( float learningRateV ) = 0;
+
+    virtual float GetGrad() const = 0;
+
+    virtual void ResetGrad() = 0;
+
+    virtual void Backward( float potential ) = 0;
+
+    bool IsUpdatable();
 
     INeuron *GetPreSynapticNeuron() const;
 
@@ -44,15 +63,13 @@ public:
 
     static SPIKING_NN::Strength GetPostSynapticUpdateStrength( SPIKING_NN::Strength strength );
 
-
-protected:
-    SPIKING_NN::Strength strength;
-public:
     void SetStrength( SPIKING_NN::Strength strength );
 
     void SetDelay( SPIKING_NN::Time delay );
 
 protected:
+    bool updatable;
+    SPIKING_NN::Strength strength;
     SPIKING_NN::Time delay;
     INeuron *preSynapticNeuron;
     INeuron *postSynapticNeuron;

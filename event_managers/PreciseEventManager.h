@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IEventManager.h"
+#include "../layers/ILayer.h"
 #include <queue>
 
 
@@ -46,21 +47,19 @@ typedef size_t BucketId;
  */
 class PreciseEventManager : public IEventManager {
 public:
-    void RegisterSpikeEvent( const SPIKING_NN::Event &event );
+    void RegisterSpikeEvent( const SPIKING_NN::EventKey &key, const SPIKING_NN::EventValue &spike );
 
     void RunSimulation( SPIKING_NN::Time time, bool useSTDP ) override;
 
-    size_t GetSpikeCounter() const;
-
     void RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input ) override;
+
+    void RegisterSpikeTrain( const SPIKING_NN::SpikeTrain &sample, ILayer &input );
 
     PreciseEventManager();
 
 private:
     std::map<BucketId, SPIKING_NN::EventBucket> eventBuckets;
 
-    BucketId GetBucketId( SPIKING_NN::Time time );
-
-    size_t spikeCounter;
+    static BucketId GetBucketId( SPIKING_NN::Time time );
 
 };

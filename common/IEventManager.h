@@ -1,6 +1,3 @@
-//
-// Created by izeren on 3/23/19.
-//
 #pragma once
 
 #include "SpikingGeneral.h"

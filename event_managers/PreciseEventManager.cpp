@@ -1,6 +1,7 @@
 #include "PreciseEventManager.h"
 #include "INeuron.h"
 #include "ISynapse.h"
+#include <iostream>
 
 /**
  *
@@ -28,86 +29,126 @@
  * If neuron is inconsistent after normalization, DELAYED_ACTIVATION will be
  * registered after its refractory period.
  */
-void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime, bool useSTDP ) {
+void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime, bool useSTDP )
+{
     for ( BucketId bucketId = 0; bucketId * SPIKING_NN::TIME_STEP < simulationTime; ++bucketId ) {
         if ( eventBuckets.find( bucketId ) == eventBuckets.end()) {
             continue;
         }
         for ( auto time_event: eventBuckets[bucketId] ) {
 
-            SPIKING_NN::Event &event = time_event.second;
-            if ( event.type != SPIKING_NN::EVENT_TYPE::SCHEDULED_RELAXATION ) {
-                spikeCounter += 1;
+            const SPIKING_NN::EventKey &key = time_event.first;
+            SPIKING_NN::EventValue &spike = time_event.second;
+
+            INeuron &neuron = *key.neuronPtr;
+            if ( spike.type == SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE ) {
+                neuron.ProcessInputSpike( key.time, spike.potential );
             }
 
-            INeuron &neuron = *event.neuronPtr;
-            bool wasConsistent = neuron.IsConsistent();
-            if ( event.type == SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE ) {
-                neuron.ProcessInputSpike( event.time, event.potential );
+//            TODO: Fix STDP logic here
+//            if ( useSTDP ) {
+//                const ISynapses &inputSynapses = neuron.GetInputSynapses();
+//                for ( ISynapse *synapse: inputSynapses ) {
+//                    synapse->RegisterPostSynapticSpike( event.key.time );
+//                }
+//                for ( ISynapse *synapse: synapses ) {
+//                    synapse->RegisterPreSynapticSpike( event.key.time );
+//                }
+//            }
+
+            if ( neuron.IsConsistent()) {
+                /*
+                 * We can get here in different ways:
+                 * 1. Just not enough potential to spike
+                 * 2. Overheated neuron was cooled down by inhibitory connections
+                 * 3. Overheated neuron was cooled down with leakage factor
+                 */
+                continue;
             }
 
-            if ((wasConsistent && !neuron.IsConsistent()) ||
-                (event.type == SPIKING_NN::EVENT_TYPE::DELAYED_ACTIVATION)) {
-                const ISynapses &synapses = neuron.GetOutputSynapses();
-                for ( ISynapse *synapse: synapses ) {
-                    RegisterSpikeEvent( {
-                                                event.time + synapse->GetDelay(),
-                                                synapse->GetPostSynapticNeuron(),
-                                                synapse->GetStrength(),
-                                                SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE
-                                        } );
-                }
-                if ( useSTDP ) {
-                    const ISynapses &inputSynapses = neuron.GetInputSynapses();
-                    for ( ISynapse *synapse: inputSynapses ) {
-                        synapse->RegisterPostSynapticSpike( event.time );
-                    }
-                    for ( ISynapse *synapse: synapses ) {
-                        synapse->RegisterPreSynapticSpike( event.time );
-                    }
-                }
+            // Register outgoing spikes for that neuron
+            for ( ISynapse *synapse: neuron.GetOutputSynapses()) {
+                RegisterSpikeEvent( {
+                                            key.time + synapse->GetDelay(),
+                                            synapse->GetPostSynapticNeuron(),
+                                    },
+                                    {
+                                            synapse->GetStrength(),
+                                            SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE
+                                    } );
             }
-            if ( wasConsistent && !neuron.IsConsistent()) {
-                neuron.NormalizePotential( event.time );
-                if ( !neuron.IsConsistent()) {
-                    RegisterSpikeEvent( {
-                                                event.time + neuron.GetTRef(),
-                                                event.neuronPtr,
-                                                0,
-                                                SPIKING_NN::EVENT_TYPE::DELAYED_ACTIVATION
-                                        } );
-                }
+
+//            Next step is to normalize potential of neuron (it can be still overheated if current potential is too
+//            high)
+            neuron.NormalizePotential( key.time );
+
+//            If neuron is not consistent after normalization we have plan delayed activation after refractory period
+            if ( !neuron.IsConsistent()) {
+                RegisterSpikeEvent( {
+                                            key.time + neuron.GetTRef(),
+                                            key.neuronPtr
+                                    },
+                                    {
+                                            0,
+                                            SPIKING_NN::EVENT_TYPE::DELAYED_ACTIVATION
+                                    } );
             }
         }
     }
     eventBuckets.clear();
 }
 
-void PreciseEventManager::RegisterSpikeEvent( const SPIKING_NN::Event &event ) {
-    BucketId bucketId = GetBucketId( event.time );
+void PreciseEventManager::RegisterSpikeEvent( const SPIKING_NN::EventKey &key, const SPIKING_NN::EventValue &spike )
+{
+    BucketId bucketId = GetBucketId( key.time );
     if ( eventBuckets.find( bucketId ) == eventBuckets.end()) {
-        eventBuckets[bucketId] = {{event.time, event}};
+        eventBuckets[bucketId] = {{key, spike}};
     } else {
-        eventBuckets[bucketId][event.time] = event;
+        // Single lookup update for spike value
+        auto it = eventBuckets[bucketId].insert( std::make_pair( key, spike ));
+        if ( !it.second ) {
+            // TODO ( use regular class for EventValue to override += operator)
+            it.first->second = it.first->second + spike;
+        }
     }
 }
 
 
-PreciseEventManager::PreciseEventManager() :
-        spikeCounter( 0 ) {}
+PreciseEventManager::PreciseEventManager() = default;
 
 
-BucketId PreciseEventManager::GetBucketId( SPIKING_NN::Time time ) {
+BucketId PreciseEventManager::GetBucketId( SPIKING_NN::Time time )
+{
     return static_cast<BucketId>(time / SPIKING_NN::TIME_STEP);
 }
 
-
-void PreciseEventManager::RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input ) {
+void PreciseEventManager::RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input )
+{
     for ( auto timingId = 0; timingId < sample.size(); ++timingId ) {
-        RegisterSpikeEvent( {sample[timingId], input[timingId], 0, SPIKING_NN::EVENT_TYPE::DELAYED_ACTIVATION} );
+        RegisterSpikeEvent(
+                {
+                        sample[timingId],
+                        input[timingId]
+                },
+                {
+                        1,
+                        SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE
+                } );
     }
 }
 
-size_t PreciseEventManager::GetSpikeCounter() const {
-    return spikeCounter;
+void PreciseEventManager::RegisterSpikeTrain( const SPIKING_NN::SpikeTrain &sample, ILayer &input )
+{
+    for ( int activationId = 0; activationId < sample.size(); ++activationId ) {
+        for ( auto t: sample[activationId] ) {
+            RegisterSpikeEvent( {
+                                        t,
+                                        input[activationId]
+                                },
+                                {
+                                        1,
+                                        SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE
+                                } );
+        }
+    }
 }
