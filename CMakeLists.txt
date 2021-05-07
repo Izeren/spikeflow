@@ -26,7 +26,7 @@ set(
         common/INetwork.cpp
         common/BasicNetwork.hpp
         common/IEventManager.h
-        stats/LayerStats.cpp stats/LayerStats.h stats/Stat.h layers/ILayer.cpp layers/ILayer.h losses/ILossFunction.cpp losses/ILossFunction.h layers/DenseLifLayer.cpp layers/DenseLifLayer.h neurons/INeuronBuilder.h layers/DenseVanillaLayer.cpp layers/DenseVanillaLayer.h common/scripts/DemoScripts.cpp common/scripts/DemoScripts.h)
+        stats/LayerStats.cpp stats/LayerStats.h stats/Stat.h layers/ILayer.cpp layers/ILayer.h losses/ILossFunction.cpp losses/ILossFunction.h layers/DenseLifLayer.cpp layers/DenseLifLayer.h neurons/INeuronBuilder.h layers/DenseVanillaLayer.cpp layers/DenseVanillaLayer.h common/scripts/DemoScripts.cpp common/scripts/DemoScripts.h network/IDenseNetwork.cpp network/IDenseNetwork.h layers/LayerMeta.h layers/ILayerBuilder.cpp layers/ILayerBuilder.h)
 include_directories( common )
 add_library( Common SHARED ${COMMON_UTILS_FILES})
 

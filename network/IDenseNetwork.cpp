@@ -1,0 +1,101 @@
+#include <PreciseEventManager.h>
+#include "IDenseNetwork.h"
+
+IDenseNetwork &IDenseNetwork::Relax( SPIKING_NN::Time time )
+{
+    for ( auto layer: layers ) {
+        layer->Relax( time );
+    }
+    return *this;
+}
+
+IDenseNetwork &IDenseNetwork::LogBasicStats()
+{
+    for ( auto layer: layers ) {
+        layer->LogBasicStats();
+    }
+    return *this;
+}
+
+IDenseNetwork::IDenseNetwork( std::vector<ILayer *> _layers, IEventManager &_eventManager ) : layers( std::move(
+        _layers )), eventManager( _eventManager ) { }
+
+IDenseNetwork &IDenseNetwork::Backward( const std::vector<float> &deltas )
+{
+    layers.back()->Backward( deltas );
+    for ( auto it = layers.rbegin() + 1; it != layers.rend(); ++it ) {
+        (*it)->Backward( {} );
+    }
+    return *this;
+}
+
+IDenseNetwork &IDenseNetwork::GradStep( size_t batchSize, float learningRateV, float learningRateW, float beta )
+{
+    for ( size_t ldx = layers.size() - 1; ldx > 0; --ldx ) {
+        layers[ldx]->GradStep( batchSize, learningRateV, learningRateW, beta, false );
+    }
+    layers.front()->GradStep( batchSize, learningRateV, learningRateW, beta, true );
+    for ( auto layer: layers ) {
+        layer->ResetGrad();
+    }
+    return *this;
+}
+
+IDenseNetwork &IDenseNetwork::Reset()
+{
+    for ( auto layer: layers ) {
+        layer->ResetPotentials();
+    }
+    return *this;
+}
+
+IDenseNetwork &IDenseNetwork::ResetStats()
+{
+    for ( auto layer: layers ) {
+        layer->ResetStats();
+    }
+    return *this;
+}
+
+std::string IDenseNetwork::GetStringStats() const
+{
+    std::stringstream ss;
+    for ( ILayer *layer: layers ) {
+        ss << *layer << "\n";
+    }
+    return ss.str();
+}
+
+std::vector<float> IDenseNetwork::Forward( const SPIKING_NN::SpikeTrain &sample, float simulationTime, bool useStdp )
+{
+    ILayer &output = *layers.back();
+    eventManager.RegisterSpikeTrain( sample, *layers.front());
+    eventManager.RunSimulation( simulationTime, useStdp );
+    Relax( simulationTime ).LogBasicStats();
+
+    auto result = std::vector<float>( layers.back()->GetSize());
+    for ( size_t idx = 0; idx < result.size(); ++idx ) {
+        result[idx] = output[idx]->GetOutput();
+    }
+    return result;
+}
+
+IDenseNetwork *
+IDenseNetworkBuilder::Build( const std::vector<LayerMeta> &layersMeta, const ISynapseBuilder &synapseBuilder,
+                             const ILayerBuilder &layerBuilder, IEventManager &eventManager ) const
+{
+    std::vector<ILayer *> layers;
+    layers.resize( layersMeta.size());
+    for ( int ldx = 0; ldx < layersMeta.size(); ++ldx ) {
+        layers[ldx] = layerBuilder.Build( layersMeta[ldx] );
+    }
+
+    for ( size_t ldx = 0; ldx < layers.size(); ++ldx ) {
+        size_t nextLayerSize = ldx + 1 < layers.size() ? layers[ldx + 1]->GetSize() : 0;
+        layers[ldx]->Init( nextLayerSize );
+        if ( nextLayerSize ) {
+            layers[ldx]->BindWithNext( *layers[ldx + 1], synapseBuilder );
+        }
+    }
+    return new IDenseNetwork( layers, eventManager );
+}

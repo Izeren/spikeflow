@@ -2,7 +2,7 @@
 #include "LifSynapseBuilder.h"
 #include "LifSynapse.h"
 
-ISynapse *LifSynapseBuilder::build( size_t layerSize, size_t nextLayerSize, INeuron *prev, INeuron *next )
+ISynapse *LifSynapseBuilder::Build( size_t layerSize, size_t nextLayerSize, INeuron *prev, INeuron *next ) const
 {
 //    3 stands for some fixed constant from the article
     float limit = sqrt( 3.f / ( static_cast<float>( nextLayerSize )));

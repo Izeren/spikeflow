@@ -1,10 +1,10 @@
 #include "DenseLifLayer.h"
 #include "ISynapse.h"
 
-DenseLifLayer::DenseLifLayer( const std::string &name, size_t _size, const INeuronBuilder &neuronBuilder )
-        : ILayer( name, _size, neuronBuilder ) { }
+DenseLifLayer::DenseLifLayer( LayerMeta meta )
+        : ILayer( std::move( meta )) { }
 
-void DenseLifLayer::Init( float alpha, size_t nextLayerSize )
+void DenseLifLayer::Init( size_t nextLayerSize )
 {
     // TODO: implement lateral inhibition as part of layer init
 //void createLateralInhibitionSynapses( SPIKING_NN::Layer &layer, int size ) {
@@ -24,7 +24,8 @@ void DenseLifLayer::Init( float alpha, size_t nextLayerSize )
 //    }
 //}
     for ( auto neuron : neurons ) {
-        neuron->RandomInit( alpha, size, nextLayerSize );
+        size_t s = GetSize();
+        neuron->RandomInit( meta.alpha, GetSize(), nextLayerSize );
     }
 }
 
@@ -72,7 +73,7 @@ ILayer &DenseLifLayer::ResetGrad()
 
 ILayer &DenseLifLayer::GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput )
 {
-    float N = size, M = 0, m = 0;
+    float N = GetSize(), M = 0, m = 0;
 //    int N2 = layer[0].get()->outputSynapses.size();
 //    if ( N2 == 0 ) {
 //        N2 = 1;
@@ -120,7 +121,7 @@ ILayer &DenseLifLayer::Backward( const std::vector<float> &deltas )
     for ( auto neuron: neurons ) {
         totalLayerOutput += neuron->GetOutput();
     }
-    for ( int idx = 0; idx < size; ++idx ) {
+    for ( int idx = 0; idx < GetSize(); ++idx ) {
         float delta = 0;
         if ( !deltas.empty()) {
             delta = deltas[idx];
@@ -133,6 +134,11 @@ ILayer &DenseLifLayer::Backward( const std::vector<float> &deltas )
 std::string DenseLifLayer::ToString() const
 {
     std::stringstream ss;
-    ss << "Stats for layer '" << name << "': " << stats;
+    ss << "Stats for layer '" << GetName() << "': " << stats;
     return ss.str();
+}
+
+ILayer &DenseLifLayer::Forward()
+{
+    return *this;
 }

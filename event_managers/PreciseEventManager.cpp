@@ -124,6 +124,7 @@ BucketId PreciseEventManager::GetBucketId( SPIKING_NN::Time time )
 
 void PreciseEventManager::RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input )
 {
+    eventBuckets.clear();
     for ( auto timingId = 0; timingId < sample.size(); ++timingId ) {
         RegisterSpikeEvent(
                 {
@@ -139,6 +140,7 @@ void PreciseEventManager::RegisterSample( const SPIKING_NN::Sample &sample, cons
 
 void PreciseEventManager::RegisterSpikeTrain( const SPIKING_NN::SpikeTrain &sample, ILayer &input )
 {
+    eventBuckets.clear();
     for ( int activationId = 0; activationId < sample.size(); ++activationId ) {
         for ( auto t: sample[activationId] ) {
             RegisterSpikeEvent( {

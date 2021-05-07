@@ -9,8 +9,8 @@ public:
 
     virtual ~ISynapseBuilder() = default;
 
-    virtual ISynapse *build( size_t layerSize, size_t nextLayerSize, INeuron *prev, INeuron *next ) = 0;
+    virtual ISynapse *Build( size_t layerSize, size_t nextLayerSize, INeuron *prev, INeuron *next ) const = 0;
 
 protected:
-    std::default_random_engine generator;
+    std::default_random_engine &generator;
 };

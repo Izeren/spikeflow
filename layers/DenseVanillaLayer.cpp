@@ -1,13 +1,12 @@
 #include "DenseVanillaLayer.h"
 #include "ISynapse.h"
 
-DenseVanillaLayer::DenseVanillaLayer( std::string _name, size_t _size, const INeuronBuilder &_neuronBuilder ) : ILayer(
-        std::move( _name ), _size, _neuronBuilder ) { }
+DenseVanillaLayer::DenseVanillaLayer( LayerMeta meta ) : ILayer( std::move( meta )) { }
 
-void DenseVanillaLayer::Init( float alpha, size_t nextLayerSize )
+void DenseVanillaLayer::Init( size_t nextLayerSize )
 {
     for ( auto neuron : neurons ) {
-        neuron->RandomInit( alpha, size, nextLayerSize );
+        neuron->RandomInit( meta.alpha, GetSize(), nextLayerSize );
     }
 }
 
@@ -76,7 +75,7 @@ ILayer &DenseVanillaLayer::Backward( const std::vector<float> &deltas )
     for ( auto neuron: neurons ) {
         totalLayerOutput += neuron->GetOutput();
     }
-    for ( int idx = 0; idx < size; ++idx ) {
+    for ( int idx = 0; idx < GetSize(); ++idx ) {
         float delta = 0;
         if ( !deltas.empty()) {
             delta = deltas[idx];
@@ -89,5 +88,18 @@ ILayer &DenseVanillaLayer::Backward( const std::vector<float> &deltas )
 std::string DenseVanillaLayer::ToString() const
 {
     return std::string();
+}
+
+ILayer &DenseVanillaLayer::Forward()
+{
+    std::vector<float> output = std::vector<float>( GetSize());
+    for ( auto neuron: neurons ) {
+        float inPotential = 0;
+        for ( auto synapse: neuron->GetInputSynapses()) {
+            inPotential += synapse->GetPreSynapticNeuron()->GetOutput() * synapse->GetStrength();
+        }
+        neuron->ProcessInputSpike( 0, inPotential );
+    }
+    return *this;
 }
 

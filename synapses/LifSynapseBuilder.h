@@ -9,6 +9,6 @@ public:
 
     ~LifSynapseBuilder() override = default;
 
-    ISynapse *build( size_t layerSize, size_t nextLayerSize, INeuron *prev, INeuron *next ) override;
+    ISynapse *Build( size_t layerSize, size_t nextLayerSize, INeuron *prev, INeuron *next ) const override;
 
 };

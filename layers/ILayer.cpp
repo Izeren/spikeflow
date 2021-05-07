@@ -1,13 +1,11 @@
 #include <ISynapseBuilder.h>
 #include "ILayer.h"
 
-ILayer::ILayer( std::string _name, size_t _size, const INeuronBuilder &_neuronBuilder ) :
-        name( std::move( _name )), size( _size ), neuronBuilder( _neuronBuilder )
+ILayer::ILayer( LayerMeta _meta ) : meta( std::move(_meta) )
 {
-
-    neurons.resize( _size );
-    for ( auto idx = 0; idx < _size; ++idx ) {
-        neurons[idx] = neuronBuilder.build();
+    neurons.resize( meta.size );
+    for ( auto idx = 0; idx < meta.size; ++idx ) {
+        neurons[idx] = meta.neuronBuilder.build();
     }
 }
 
@@ -33,18 +31,28 @@ ILayer::~ILayer()
     }
 }
 
-ILayer &ILayer::BindWithNext( ILayer &nextLayer, ISynapseBuilder &synapseBuilder )
+ILayer &ILayer::BindWithNext( ILayer &nextLayer, const ISynapseBuilder &synapseBuilder )
 {
-    size_t size1 = size;
-    size_t size2 = nextLayer.size;
+    size_t size1 = GetSize();
+    size_t size2 = nextLayer.GetSize();
     for ( int prevId = 0; prevId < size1; prevId++ ) {
         for ( int nextId = 0; nextId < size2; nextId++ ) {
             INeuron *prev = neurons[prevId];
             INeuron *next = nextLayer[nextId];
-            ISynapse *synapsePtr = synapseBuilder.build( size1, size2, prev, next );
+            ISynapse *synapsePtr = synapseBuilder.Build( size1, size2, prev, next );
             prev->AddOutputSynapse( synapsePtr );
             next->AddInputSynapse( synapsePtr );
         }
     }
-    return nextLayer;
+    return *this;
+}
+
+std::string ILayer::GetName() const
+{
+    return meta.name;
+}
+
+size_t ILayer::GetSize() const
+{
+    return meta.size;
 }

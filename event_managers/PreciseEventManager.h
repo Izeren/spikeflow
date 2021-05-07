@@ -53,7 +53,7 @@ public:
 
     void RegisterSample( const SPIKING_NN::Sample &sample, const SPIKING_NN::Layer &input ) override;
 
-    void RegisterSpikeTrain( const SPIKING_NN::SpikeTrain &sample, ILayer &input );
+    void RegisterSpikeTrain( const SPIKING_NN::SpikeTrain &sample, ILayer &input ) override;
 
     PreciseEventManager();
 
