@@ -9,7 +9,7 @@ set(
         dataset_utils/IrisUtils.h
         dataset_utils/IrisUtils.cpp
         dataset_utils/MnistUtils.hpp
-        dataset_utils/DataCommon.cpp dataset_utils/DataCommon.h)
+        dataset_utils/DataCommon.cpp dataset_utils/DataCommon.h dataset_utils/DigitsUtils.cpp dataset_utils/DigitsUtils.h)
 include_directories( dataset_utils )
 add_library( DatasetUtils SHARED ${DATASET_UTILS_FILES})
 

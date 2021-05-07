@@ -9,6 +9,7 @@
 #include <LifNeuron.h>
 #include <LifSynapse.h>
 #include <BasicNetwork.hpp>
+#include <DigitsUtils.h>
 #include "DemoScripts.h"
 #include "../../layers/DenseVanillaLayer.h"
 #include "../../layers/DenseLifLayer.h"
@@ -220,4 +221,74 @@ void DemoScripts::RunDummyModel()
         std::cout << activation << " ";
     }
     std::cout << "\n";
+}
+
+void
+DemoScripts::TrainSpikingDigits( const char *trainPath, const char *valPath, std::default_random_engine &generator )
+{
+    float EPS = 1e-1;
+    float LEARNING_RATE_V = 0.00000;
+    float LEARNING_RATE_W = 0.00001;
+    float SIMULATION_TIME = 100;
+    int BATCH_SIZE = 20;
+    const float BETA = 10;
+    std::vector<ILayer *> layers;
+    LifSynapseBuilder synapseBuilder = LifSynapseBuilder( generator );
+    LifNeuronBuilder neuronBuilder = LifNeuronBuilder();
+    DenseLifLayerBuilder layerBuilder = DenseLifLayerBuilder();
+    PreciseEventManager eventManager = PreciseEventManager();
+
+    std::vector<LayerMeta> layersMeta = {
+            {5,   "input",   64, neuronBuilder},
+            {1,   "hidden2", 10, neuronBuilder},
+            {0.1, "output",  10, neuronBuilder}
+    };
+
+    std::cout << "Meta is ready, building network\n";
+    auto network = IDenseNetworkBuilder().Build( layersMeta, synapseBuilder, layerBuilder, eventManager );
+    std::cout << "Network has been built loading the dataset\n";
+
+    SPIKING_NN::Dataset rawData;
+    SPIKING_NN::SpikeTrainDataset data;
+    DigitsUtils().ReadDigits( trainPath, valPath, rawData );
+    std::cout << "Dataset has been loaded\n";
+    DATA_CONVERSION::ConvertDataToSpikeTrains( rawData, data, generator, SIMULATION_TIME );
+    std::cout << "Dataset has been converted to spikes\n";
+
+    for ( int epochId = 0; epochId < 1000; epochId++ ) {
+        float totalLoss = 0.f;
+        int silentSamples = 0;
+        int guesses = 0;
+
+        for ( int sampleId = 0; sampleId < data.xTrain.size(); sampleId++ ) {
+            std::vector<float> output = network->Forward( data.xTrain[sampleId], SIMULATION_TIME, false );
+            if (( sampleId + 1 ) % 1000 == 0 ) {
+                std::cout << sampleId + 1 << " / " << data.xTrain.size() << " samples has been forwarded\n";
+            }
+
+            std::vector<float> deltas;
+            std::vector<float> softMax;
+            float S = 0;
+            float loss = SoftMaxLoss( output, data.yTrain[sampleId], softMax, deltas, &S );
+            totalLoss += loss;
+            int predictedClassId = GetClassPrediction( output );
+            silentSamples += predictedClassId == -1 ? 1 : 0;
+            int guess = abs((float) predictedClassId - data.yTrain[sampleId] ) < EPS;
+            guesses += guess;
+
+            network->Backward( deltas );
+
+            if (( sampleId + 1 ) % BATCH_SIZE == 0 ) {
+                network->GradStep( BATCH_SIZE, LEARNING_RATE_V, LEARNING_RATE_W, BETA );
+            }
+            network->Reset();
+        }
+        std::cout << "Loss for epoch: " << std::setw( 3 ) << epochId << " is: ";
+        std::cout << std::fixed << std::setprecision( 5 ) << std::setw( 9 ) << totalLoss / data.xTrain.size() << " ";
+        std::cout << "Accuracy: " << (float) guesses / data.xTrain.size() << " ";
+        std::cout << "Silent samples: " << std::setw( 3 ) << silentSamples << " | ";
+        std::cout << network->GetStringStats();
+        network->ResetStats();
+    }
+    delete network;
 }
