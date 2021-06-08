@@ -7,7 +7,7 @@ public:
 
     explicit DenseVanillaLayer( LayerMeta meta );
 
-    void Init( size_t nextLayerSize ) override;
+    void Init( size_t nextLayerSize, std::default_random_engine &generator, float z ) override;
 
     ILayer &Relax( SPIKING_NN::Time time ) override;
 

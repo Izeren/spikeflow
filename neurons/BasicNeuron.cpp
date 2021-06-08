@@ -1,7 +1,7 @@
 #include <BasicSynapse.h>
 #include "BasicNeuron.h"
 
-void BasicNeuron::ProcessInputSpike( SPIKING_NN::Time time, SPIKING_NN::Potential _potential )
+float BasicNeuron::ProcessInputSpike( SPIKING_NN::Time time, SPIKING_NN::Potential _potential )
 {
     potential = _potential;
 }
@@ -21,7 +21,8 @@ void BasicNeuron::ResetGrad()
     grad = 0;
 }
 
-void BasicNeuron::RandomInit( float alpha, size_t layerSize, size_t nextLayerSize ) { }
+void BasicNeuron::RandomInit( float alpha, size_t layerSize, size_t nextLayerSize, float z, std::uniform_real_distribution<float> &dist,
+                              std::default_random_engine &generator ) { }
 
 BasicNeuron::BasicNeuron()
 {
@@ -73,7 +74,7 @@ float BasicNeuron::GetOutput() const
     return potential;
 }
 
-void BasicNeuron::NormalizePotential( SPIKING_NN::Time time )
+float BasicNeuron::NormalizePotential( SPIKING_NN::Time time )
 {
     // Does nothing because this logic is not applicable
 }

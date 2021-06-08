@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SpikingGeneral.h"
+#include <set>
 #include <unordered_set>
 #include <random>
 
@@ -11,9 +12,9 @@ typedef std::unordered_set<ISynapse *> ISynapses;
 
 class INeuron {
 public:
-    virtual void ProcessInputSpike( SPIKING_NN::Time time, SPIKING_NN::Potential potential ) = 0;
+    virtual float ProcessInputSpike( SPIKING_NN::Time time, SPIKING_NN::Potential potential ) = 0;
 
-    virtual void NormalizePotential( SPIKING_NN::Time time ) = 0;
+    virtual float NormalizePotential( SPIKING_NN::Time time ) = 0;
 
     explicit INeuron( SPIKING_NN::Potential potential = 0, SPIKING_NN::Time tRef = SPIKING_NN::TIME_STEP,
                       bool isConsistent = true );
@@ -36,7 +37,8 @@ public:
 
     virtual float GetMaxMP() = 0;
 
-    virtual void RandomInit( float alpha, size_t layerSize, size_t nextLayerSize ) = 0;
+    virtual void RandomInit( float alpha, size_t layerSize, size_t nextLayerSize, float z, std::uniform_real_distribution<float> &dist,
+                             std::default_random_engine &generator ) = 0;
 
     virtual SPIKING_NN::Time GetFirstSpikeTS() = 0;
 
@@ -66,12 +68,20 @@ public:
 
     bool operator<( const INeuron &other ) const;
 
+    float x;
+    float y;
+    float z;
+
+    std::set<std::pair<float, INeuron *> > neighbours;
+
 protected:
     ISynapses inputSynapses;
     ISynapses outputSynapses;
-    SPIKING_NN::Time potential;
+    SPIKING_NN::Potential induced;
+    SPIKING_NN::Potential  potential;
     SPIKING_NN::Time tRef;
     bool consistent;
     int inputSpikeCounter;
     int outputSpikeCounter;
+
 };

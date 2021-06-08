@@ -56,3 +56,8 @@ size_t ILayer::GetSize() const
 {
     return meta.size;
 }
+
+float ILayer::GetZShift()
+{
+    return meta.zShift;
+}

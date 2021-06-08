@@ -4,7 +4,7 @@
 DenseLifLayer::DenseLifLayer( LayerMeta meta )
         : ILayer( std::move( meta )) { }
 
-void DenseLifLayer::Init( size_t nextLayerSize )
+void DenseLifLayer::Init( size_t nextLayerSize, std::default_random_engine &generator, float z )
 {
     // TODO: implement lateral inhibition as part of layer init
 //void createLateralInhibitionSynapses( SPIKING_NN::Layer &layer, int size ) {
@@ -23,9 +23,9 @@ void DenseLifLayer::Init( size_t nextLayerSize )
 //        }
 //    }
 //}
+    std::uniform_real_distribution<float> coordDist( -meta.width, meta.width );
     for ( auto neuron : neurons ) {
-        size_t s = GetSize();
-        neuron->RandomInit( meta.alpha, GetSize(), nextLayerSize );
+        neuron->RandomInit( meta.alpha, GetSize(), nextLayerSize, z, coordDist, generator );
     }
 }
 

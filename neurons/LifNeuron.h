@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <unordered_set>
 #include <math.h>
 #include "INeuron.h"
@@ -9,17 +10,18 @@ class ISynapse;
 
 class LifNeuron : public INeuron {
 public:
-    void ProcessInputSpike( SPIKING_NN::Time time, SPIKING_NN::Potential potential ) override;
+    float ProcessInputSpike( SPIKING_NN::Time time, SPIKING_NN::Potential potential ) override;
 
     void Reset() override;
 
     void ResetGrad() override;
 
-    void RandomInit( float alpha, size_t layerSize, size_t nextLayerSize ) override;
+    void RandomInit( float alpha, size_t layerSize, size_t nextLayerSize, float z, std::uniform_real_distribution<float> &dist,
+                     std::default_random_engine &generator ) override;
 
     LifNeuron( SPIKING_NN::Potential v, SPIKING_NN::Potential a, SPIKING_NN::Potential vMinThresh,
-               SPIKING_NN::Potential vMaxThresh, SPIKING_NN::Time tau, SPIKING_NN::Time tps, SPIKING_NN::Time tOut,
-               SPIKING_NN::Time tRef, bool isConsistent );
+               SPIKING_NN::Potential vMaxThresh, SPIKING_NN::Time tau, SPIKING_NN::Time tps,
+               SPIKING_NN::Time tOut, SPIKING_NN::Time tRef, bool isConsistent );
 
     LifNeuron();
 
@@ -29,7 +31,7 @@ public:
 
     bool IsConsistent();
 
-    void NormalizePotential( SPIKING_NN::Time time ) override;
+    float NormalizePotential( SPIKING_NN::Time time ) override;
 
     SPIKING_NN::Time GetFirstSpikeTS() override;
 

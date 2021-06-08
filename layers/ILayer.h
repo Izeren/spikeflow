@@ -12,7 +12,7 @@ public:
 
     virtual ~ILayer();
 
-    virtual void Init( size_t nextLayerSize ) = 0;
+    virtual void Init( size_t nextLayerSize, std::default_random_engine &generator, float z ) = 0;
 
     virtual ILayer &Relax( SPIKING_NN::Time time ) = 0;
 
@@ -45,8 +45,10 @@ public:
 
     std::string GetName() const;
 
+    float GetZShift();
+
+    std::vector<INeuron *> neurons;
 protected:
     LayerStats stats;
     LayerMeta meta;
-    std::vector<INeuron *> neurons;
 };

@@ -33,6 +33,7 @@ private:
 class IDenseNetworkBuilder {
 public:
     IDenseNetwork *
-    Build( const std::vector<LayerMeta> &layersMeta, const ISynapseBuilder &synapseBuilder, const ILayerBuilder
-    &layerBuilder, IEventManager &eventManager ) const;
+    Build( const std::vector<LayerMeta> &layersMeta, const ISynapseBuilder &synapseBuilder,
+           const ILayerBuilder &layerBuilder, IEventManager &eventManager,
+           std::default_random_engine &generator, float induceDistLimit ) const;
 };

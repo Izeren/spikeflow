@@ -5,4 +5,6 @@ struct LayerMeta {
     std::string name;
     size_t size;
     INeuronBuilder &neuronBuilder;
+    float width;
+    float zShift;
 };

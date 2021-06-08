@@ -63,9 +63,9 @@ void DemoScripts::TrainVanillaIris( char *path, std::default_random_engine &gene
     DenseVanillaLayer hidden = DenseVanillaLayer( {0, "hidden1", IRIS_HIDDEN, neuronBuilder} );
     DenseVanillaLayer output = DenseVanillaLayer( {0, "output", IRIS_OUTPUT, neuronBuilder} );
 
-    input.Init( hidden.GetSize());
-    input.Init( output.GetSize());
-    input.Init( 0 );
+    input.Init( hidden.GetSize(), generator, 0 );
+    input.Init( output.GetSize(), generator, 0 );
+    input.Init( 0, generator, 0 );
 
     VanillaSynapseBuilder synapseBuilder = VanillaSynapseBuilder( generator );
     input.BindWithNext( hidden, synapseBuilder );
@@ -138,13 +138,14 @@ void DemoScripts::TrainSpikingIris( char *path, std::default_random_engine &gene
 
 
     std::vector<LayerMeta> layersMeta = {
-            {5,   "input",   IRIS_INPUT,    neuronBuilder},
-            {1,   "hidden1", IRIS_HIDDEN,   neuronBuilder},
-            {1,   "hidden2", IRIS_HIDDEN_2, neuronBuilder},
-            {0.1, "output",  IRIS_OUTPUT,   neuronBuilder}
+            {5,   "input",   IRIS_INPUT,    neuronBuilder, 1,   0},
+            {1,   "hidden1", IRIS_HIDDEN,   neuronBuilder, 2,   1},
+            {1,   "hidden2", IRIS_HIDDEN_2, neuronBuilder, 2,   1},
+            {0.1, "output",  IRIS_OUTPUT,   neuronBuilder, 0.5, 1}
     };
 
-    auto network = IDenseNetworkBuilder().Build( layersMeta, synapseBuilder, layerBuilder, eventManager );
+    auto network = IDenseNetworkBuilder().Build( layersMeta, synapseBuilder, layerBuilder, eventManager,
+                                                 generator, 1.25 );
 
     SPIKING_NN::Dataset rawData;
     SPIKING_NN::SpikeTrainDataset data;
@@ -239,13 +240,14 @@ DemoScripts::TrainSpikingDigits( const char *trainPath, const char *valPath, std
     PreciseEventManager eventManager = PreciseEventManager();
 
     std::vector<LayerMeta> layersMeta = {
-            {5,   "input",   64, neuronBuilder},
-            {1,   "hidden2", 10, neuronBuilder},
-            {0.1, "output",  10, neuronBuilder}
+            {5,   "input",   64, neuronBuilder, 1},
+            {1,   "hidden2", 10, neuronBuilder, 1},
+            {0.1, "output",  10, neuronBuilder, 1}
     };
 
     std::cout << "Meta is ready, building network\n";
-    auto network = IDenseNetworkBuilder().Build( layersMeta, synapseBuilder, layerBuilder, eventManager );
+    auto network = IDenseNetworkBuilder().Build( layersMeta, synapseBuilder, layerBuilder, eventManager,
+                                                 generator, 0 );
     std::cout << "Network has been built loading the dataset\n";
 
     SPIKING_NN::Dataset rawData;

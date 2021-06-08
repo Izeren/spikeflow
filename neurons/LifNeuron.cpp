@@ -13,7 +13,7 @@ float LifNeuron::GetWDyn( float tOut, float tp, float tRef )
 }
 
 
-void LifNeuron::ProcessInputSpike( float time, float potential )
+float LifNeuron::ProcessInputSpike( float time, float potential )
 {
     float wDyn = GetWDyn( tOut, time, tRef );
     float leackyFactor;
@@ -23,38 +23,39 @@ void LifNeuron::ProcessInputSpike( float time, float potential )
         leackyFactor = exp(( tps - time ) / tau );
     }
 
+    float oldPotential = this->potential;
     this->potential = this->potential * leackyFactor + potential * wDyn;
     tps = time;
     inputSpikeCounter += 1;
     if ( this->potential < -this->vMaxThresh ) {
         this->potential = -this->vMaxThresh;
     }
-    this->consistent = ( this->potential < this->vMaxThresh );
+    this->consistent = ( this->potential - this->induced < this->vMaxThresh );
     outputSpikeCounter += !consistent;
+    return this->potential - oldPotential;
 }
 
-LifNeuron::LifNeuron( float v, float a, float vMinThresh,
-                      float vMaxThresh, float tau, float tps, float tOut, float tRef, bool isConsistent )
+LifNeuron::LifNeuron( SPIKING_NN::Potential v, SPIKING_NN::Potential a, SPIKING_NN::Potential vMinThresh,
+                      SPIKING_NN::Potential vMaxThresh, SPIKING_NN::Time tau, SPIKING_NN::Time tps,
+                      SPIKING_NN::Time tOut, SPIKING_NN::Time tRef, bool isConsistent )
         : INeuron( v, tRef, isConsistent ), a( a ), vMaxThresh( vMaxThresh ),
-          tau( tau ), tps( tps ), tOut( tOut )
-{
-    grad = 0;
-    sigma_mu = 0.25;
-    DlDV = 0;
-}
+          tau( tau ), tps( tps ), tOut( tOut ), grad( 0 ), sigma_mu( 0.25 ),
+          DlDV( 0 ), fts( -1 ), batchDlDV( 0 ) { }
 
 bool LifNeuron::IsConsistent()
 {
     return consistent;
 }
 
-void LifNeuron::NormalizePotential( float time )
+float LifNeuron::NormalizePotential( float time )
 {
+    float oldPotential = potential;
     if ( potential >= vMaxThresh ) {
         RelaxOutput( time, true );
         potential -= vMaxThresh;
     }
     consistent = ( potential < vMaxThresh );
+    return potential - oldPotential;
 }
 
 
@@ -196,10 +197,15 @@ void LifNeuron::SetSigmaMu( float sigmaMu )
     sigma_mu = sigmaMu;
 }
 
-void LifNeuron::RandomInit( float alpha, size_t layerSize, size_t nextLayerSize )
+void LifNeuron::RandomInit( float alpha, size_t layerSize, size_t nextLayerSize, float z,
+                            std::uniform_real_distribution<float> &dist,
+                            std::default_random_engine &generator )
 {
     // In fact, for the output layer (nextLayerSize == 0) we don't care about vMaxThresh. We asses only membrane potentials
     vMaxThresh = alpha * sqrt( 3. / ( nextLayerSize ? nextLayerSize : 1 ));
+    x = dist( generator );
+    y = dist( generator );
+    z = z;
 }
 
 float LifNeuron::GetMaxMP()

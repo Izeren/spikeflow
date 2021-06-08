@@ -3,10 +3,11 @@
 
 DenseVanillaLayer::DenseVanillaLayer( LayerMeta meta ) : ILayer( std::move( meta )) { }
 
-void DenseVanillaLayer::Init( size_t nextLayerSize )
+void DenseVanillaLayer::Init( size_t nextLayerSize, std::default_random_engine &generator, float z )
 {
+    std::uniform_real_distribution<float> dist;
     for ( auto neuron : neurons ) {
-        neuron->RandomInit( meta.alpha, GetSize(), nextLayerSize );
+        neuron->RandomInit( meta.alpha, GetSize(), nextLayerSize, 0, dist, generator );
     }
 }
 
