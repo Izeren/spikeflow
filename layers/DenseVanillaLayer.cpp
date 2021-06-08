@@ -22,7 +22,7 @@ ILayer &DenseVanillaLayer::Relax( SPIKING_NN::Time time )
 ILayer &DenseVanillaLayer::LogBasicStats()
 {
     for ( auto neuron : neurons ) {
-        stats.neuronMP.Add( neuron->GetMaxMP());
+        stats.neuronMPMax.Add( neuron->GetMaxMP());
         for ( auto synapse : neuron->GetOutputSynapses()) {
             stats.synapseWeight.Add( synapse->GetStrength());
         }

@@ -40,7 +40,10 @@ ILayer &DenseLifLayer::Relax( SPIKING_NN::Time time )
 ILayer &DenseLifLayer::LogBasicStats()
 {
     for ( auto neuron : neurons ) {
-        stats.neuronMP.Add( neuron->GetMaxMP());
+        stats.neuronMPMax.Add( neuron->GetMaxMP());
+        stats.neuronMP.Add( neuron->GetPotential());
+        stats.neuronMPInduced.Add( neuron->GetInduced());
+        stats.inducedSpikes.Add( neuron->GetInductionAffectedSpikes());
         for ( auto synapse : neuron->GetOutputSynapses()) {
             stats.synapseWeight.Add( synapse->GetStrength());
         }

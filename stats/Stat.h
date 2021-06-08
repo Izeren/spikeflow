@@ -12,6 +12,8 @@ public:
 
     float GetMean() const;
 
+    float GetMeanSquare() const;
+
     T GetMin() const;
 
     T GetMax() const;
@@ -27,6 +29,7 @@ public:
 
 private:
     T sum;
+    T sumOfSquares;
     T maxValue;
     T minValue;
     size_t cnt;
@@ -43,6 +46,7 @@ void Stat<T>::Add( T sample )
     }
     cnt += 1;
     sum += sample;
+    sumOfSquares += sample * sample;
 }
 
 template<typename T>
@@ -52,6 +56,12 @@ template<typename T>
 float Stat<T>::GetMean() const
 {
     return cnt ? static_cast<float>( sum ) / cnt : 0;
+}
+
+template<typename T>
+float Stat<T>::GetMeanSquare() const
+{
+    return cnt ? static_cast<float>( sumOfSquares ) / cnt : 0;
 }
 
 template<typename T>
@@ -78,6 +88,7 @@ void Stat<T>::Reset()
     minValue = 0;
     maxValue = 0;
     sum = 0;
+    sumOfSquares = 0;
     cnt = 0;
 }
 
@@ -88,6 +99,7 @@ std::ostream &operator<<( std::ostream &out, const Stat<M> &stat )
     int defWidth = defPrecision + 3;
     out << std::fixed << std::setprecision( defPrecision ) << std::setfill( ' ' ) << std::setw( defWidth );
     out << "range: [" << std::setw( defWidth ) << stat.GetMin() << " " << stat.GetMax();
-    return out << "], mean: " << stat.GetMean() << ", cnt: " << stat.GetCnt();
+    out << "], mean: " << stat.GetMean() << ", cnt: " << stat.GetCnt();
+    return out << ", sumOfSquares: " << stat.GetMeanSquare();
 }
 

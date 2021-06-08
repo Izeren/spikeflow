@@ -79,6 +79,10 @@ protected:
     ISynapses outputSynapses;
     SPIKING_NN::Potential induced;
     SPIKING_NN::Potential  potential;
+    int inductionAffectedSpikes;
+public:
+    int GetInductionAffectedSpikes() const;
+
 public:
     SPIKING_NN::Potential GetInduced() const;
 

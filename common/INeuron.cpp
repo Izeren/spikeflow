@@ -98,3 +98,8 @@ void INeuron::SetPotential( float potential )
 {
     INeuron::potential = potential;
 }
+
+int INeuron::GetInductionAffectedSpikes() const
+{
+    return inductionAffectedSpikes;
+}

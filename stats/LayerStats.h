@@ -12,7 +12,13 @@ public:
 
     Stat<float> synapseWeight;
 
+    Stat<float> neuronMPMax;
+
     Stat<float> neuronMP;
+
+    Stat<float> neuronMPInduced;
+
+    Stat<int> inducedSpikes;
 
     Stat<int> spikes;
 

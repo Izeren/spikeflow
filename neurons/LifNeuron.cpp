@@ -31,6 +31,7 @@ float LifNeuron::ProcessInputSpike( float time, float potential )
         this->potential = -this->vMaxThresh;
     }
     this->consistent = ( this->potential - this->induced < this->vMaxThresh );
+    inductionAffectedSpikes +=  !consistent && ( this->potential < this->vMaxThresh );
     outputSpikeCounter += !consistent;
     return this->potential - oldPotential;
 }
@@ -102,6 +103,7 @@ LifNeuron::LifNeuron()
     batchDlDV = 0;
     inputSpikeCounter = 0;
     outputSpikeCounter = 0;
+    inductionAffectedSpikes = 0;
 }
 
 void LifNeuron::Reset()
@@ -114,6 +116,7 @@ void LifNeuron::Reset()
     consistent = true;
     inputSpikeCounter = 0;
     outputSpikeCounter = 0;
+    inductionAffectedSpikes = 0;
 }
 
 void LifNeuron::ResetGrad()
