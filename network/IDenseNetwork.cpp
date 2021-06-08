@@ -82,12 +82,12 @@ std::vector<float> IDenseNetwork::Forward( const SPIKING_NN::SpikeTrain &sample,
 
 float GetDist( INeuron &n1, INeuron &n2 )
 {
-    return sqrt(( n1.x - n2.x ) * ( n1.x - n2.x )
-                + ( n1.y - n2.y ) * ( n1.y - n2.y )
-                + ( n1.z - n2.z ) * ( n1.z - n2.z ));
+    return ( n1.x - n2.x ) * ( n1.x - n2.x )
+           + ( n1.y - n2.y ) * ( n1.y - n2.y )
+           + ( n1.z - n2.z ) * ( n1.z - n2.z );
 }
 
-void BuildSpatialConnections( std::vector<ILayer *> &layers, float distLimit )
+void BuildSpatialConnections( std::vector<ILayer *> &layers, float distLimitSquared )
 {
     for ( size_t l1dx = 0; l1dx < layers.size(); ++l1dx ) {
         for ( size_t l2dx = 0; l2dx < layers.size(); ++l2dx ) {
@@ -99,7 +99,7 @@ void BuildSpatialConnections( std::vector<ILayer *> &layers, float distLimit )
                     INeuron *n1 = layers[l1dx]->neurons[n1dx];
                     INeuron *n2 = layers[l2dx]->neurons[n2dx];
                     float dist = GetDist( *n1, *n2 );
-                    if ( dist < distLimit ) {
+                    if ( dist < distLimitSquared ) {
                         n1->neighbours.insert( std::make_pair( dist, n2 ));
                         n2->neighbours.insert( std::make_pair( dist, n1 ));
                     }

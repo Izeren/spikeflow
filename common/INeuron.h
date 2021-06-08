@@ -79,6 +79,16 @@ protected:
     ISynapses outputSynapses;
     SPIKING_NN::Potential induced;
     SPIKING_NN::Potential  potential;
+public:
+    SPIKING_NN::Potential GetInduced() const;
+
+    void SetInduced( float induced );
+
+    SPIKING_NN::Potential GetPotential() const;
+
+    void SetPotential( float potential );
+
+protected:
     SPIKING_NN::Time tRef;
     bool consistent;
     int inputSpikeCounter;

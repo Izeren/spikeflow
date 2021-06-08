@@ -145,7 +145,7 @@ void DemoScripts::TrainSpikingIris( char *path, std::default_random_engine &gene
     };
 
     auto network = IDenseNetworkBuilder().Build( layersMeta, synapseBuilder, layerBuilder, eventManager,
-                                                 generator, 1.25 );
+                                                 generator, 1.25 * 1.25 );
 
     SPIKING_NN::Dataset rawData;
     SPIKING_NN::SpikeTrainDataset data;

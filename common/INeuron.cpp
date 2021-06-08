@@ -78,3 +78,23 @@ bool INeuron::operator<( const INeuron &other ) const
 {
     return GetOutput() < other.GetOutput();
 }
+
+SPIKING_NN::Potential INeuron::GetInduced() const
+{
+    return induced;
+}
+
+void INeuron::SetInduced( float induced )
+{
+    INeuron::induced = induced;
+}
+
+SPIKING_NN::Potential INeuron::GetPotential() const
+{
+    return potential;
+}
+
+void INeuron::SetPotential( float potential )
+{
+    INeuron::potential = potential;
+}

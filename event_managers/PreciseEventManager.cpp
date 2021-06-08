@@ -3,6 +3,13 @@
 #include "ISynapse.h"
 #include <iostream>
 
+void UpdateInductions( INeuron &neuron ) {
+    float SPACE_POTETIAL_FACTOR = 1.f;
+    for ( auto neighbour: neuron.neighbours ) {
+        neighbour.second->SetInduced( neuron.GetPotential() * SPACE_POTETIAL_FACTOR / neighbour.first );
+    }
+}
+
 /**
  *
  * @param simulationTime
@@ -43,6 +50,7 @@ void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime, bool u
             INeuron &neuron = *key.neuronPtr;
             if ( spike.type == SPIKING_NN::EVENT_TYPE::INCOMING_SPIKE ) {
                 neuron.ProcessInputSpike( key.time, spike.potential );
+                UpdateInductions( neuron );
             }
 
 //            TODO: Fix STDP logic here
@@ -81,6 +89,7 @@ void PreciseEventManager::RunSimulation( SPIKING_NN::Time simulationTime, bool u
 //            Next step is to normalize potential of neuron (it can be still overheated if current potential is too
 //            high)
             neuron.NormalizePotential( key.time );
+            UpdateInductions( neuron );
 
 //            If neuron is not consistent after normalization we have plan delayed activation after refractory period
             if ( !neuron.IsConsistent()) {
