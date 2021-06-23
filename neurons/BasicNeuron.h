@@ -18,13 +18,14 @@ public:
 
     void RelaxOutput( SPIKING_NN::Time time, bool withSpike ) override;
 
-    void Backward( float layerTotalOutput, float delta ) override;
+    void Backward( float layerTotalOutput, float delta, size_t totalNeurons, size_t activeNeurons,
+                   float meanReversedSquaredThresholds ) override;
 
     void SetGrad( float _grad );
 
     float GetGrad() const override;
 
-    void GradStep( float learningRate ) override;
+    void GradStep( float learningRate, size_t neurons, size_t inputSynapses, size_t inputActiveSynapses ) override;
 
 
     float GetOutput() const override;

@@ -18,7 +18,7 @@ public:
 
     void RegisterPostSynapticSpike( SPIKING_NN::Time time ) override;
 
-    void GradStep( float learningRateV ) override;
+    void GradStep( float learningRateV, size_t activeNeurons, size_t nextLayerSize, float weightNormFactor ) override;
 
     void Backward( float potential ) override;
 

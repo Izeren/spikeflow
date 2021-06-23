@@ -31,7 +31,7 @@ float LifNeuron::ProcessInputSpike( float time, float potential )
         this->potential = -this->vMaxThresh;
     }
     this->consistent = ( this->potential - this->induced < this->vMaxThresh );
-    inductionAffectedSpikes +=  !consistent && ( this->potential < this->vMaxThresh );
+    inductionAffectedSpikes += !consistent && ( this->potential < this->vMaxThresh );
     outputSpikeCounter += !consistent;
     return this->potential - oldPotential;
 }
@@ -60,7 +60,8 @@ float LifNeuron::NormalizePotential( float time )
 }
 
 
-void LifNeuron::Backward( float sumOutput, float delta )
+void LifNeuron::Backward( float sumOutput, float delta, size_t totalNeurons, size_t activeNeurons,
+                          float meanReversedSquaredThresholds )
 {
 //    float totalStrength = 0;
 //    for ( auto synapse: outputSynapses ) {
@@ -70,6 +71,7 @@ void LifNeuron::Backward( float sumOutput, float delta )
 //        }
 //    }
     grad = outputSynapses.empty() ? delta : 0;
+    float deltaNorm = 1.;
     for ( ISynapse *outputSynapse: outputSynapses ) {
         auto next = outputSynapse->GetPostSynapticNeuron();
         grad += next->GetGrad() * outputSynapse->GetStrength();
@@ -77,10 +79,13 @@ void LifNeuron::Backward( float sumOutput, float delta )
             outputSynapse->Backward( a );
         }
     }
-    // The right side grad delta is used
-    DlDV = grad * ( -( 1 + sigma_mu ) * a + sigma_mu * sumOutput ) / vMaxThresh;
+    if ( !outputSynapses.empty()) {
+        deltaNorm = activeNeurons ? sqrt( totalNeurons / activeNeurons ) : 0;
+        deltaNorm *= 1. / vMaxThresh / meanReversedSquaredThresholds;
+    }
+    grad = grad / vMaxThresh * deltaNorm;
+    DlDV = grad * a;
     // This is for transferring grad delta from right side of the neuron to the left one
-    grad /= vMaxThresh;
     batchDlDV += DlDV;
 }
 
@@ -181,12 +186,13 @@ float LifNeuron::GetSigmaMu() const
     return sigma_mu;
 }
 
-void LifNeuron::GradStep( float learningRate )
+void LifNeuron::GradStep( float learningRate, size_t neurons, size_t inputSynapses, size_t inputActiveSynapses )
 {
-    vMaxThresh -= batchDlDV * learningRate; //* sqrt(N / M / m);
+    float normFactor = inputActiveSynapses ? sqrt( 1.f * neurons / inputSynapses / inputActiveSynapses ) : 0;
+    vMaxThresh -= batchDlDV * learningRate * normFactor;
     //TODO: those neurons should be carefully studied
-    if ( vMaxThresh < 0 ) {
-        vMaxThresh = 0.001;
+    if ( vMaxThresh < 0.01 ) {
+        vMaxThresh = 0.01;
     }
 }
 
@@ -205,10 +211,10 @@ void LifNeuron::RandomInit( float alpha, size_t layerSize, size_t nextLayerSize,
                             std::default_random_engine &generator )
 {
     // In fact, for the output layer (nextLayerSize == 0) we don't care about vMaxThresh. We asses only membrane potentials
-    vMaxThresh = alpha * sqrt( 3. / ( nextLayerSize ? nextLayerSize : 1 ));
+    vMaxThresh = alpha * sqrt( 3. / layerSize );
     x = dist( generator );
     y = dist( generator );
-    z = z;
+    this->z = z;
 }
 
 float LifNeuron::GetMaxMP()

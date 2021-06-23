@@ -27,9 +27,10 @@ public:
 
     virtual void RelaxOutput( SPIKING_NN::Time ts, bool withSpike ) = 0;
 
-    virtual void Backward( float sumOutput, float delta ) = 0;
+    virtual void Backward( float sumOutput, float delta, size_t totalNeurons, size_t activeNeurons,
+                           float meanReversedSquaredThresholds ) = 0;
 
-    virtual void GradStep( float learningRate ) = 0;
+    virtual void GradStep( float learningRate, size_t neurons, size_t inputSynapses, size_t inputActiveSynapses ) = 0;
 
     virtual float GetGrad() const = 0;
 

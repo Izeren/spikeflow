@@ -35,7 +35,8 @@ public:
 
     SPIKING_NN::Time GetFirstSpikeTS() override;
 
-    void Backward( SPIKING_NN::Potential sumOutput, float delta ) override;
+    void Backward( float sumOutput, float delta, size_t totalNeurons, size_t activeNeurons,
+                   float meanReversedSquaredThresholds ) override;
 
     void RelaxOutput( SPIKING_NN::Time time, bool withSpike ) override;
 
@@ -51,7 +52,7 @@ public:
 
     float GetSigmaMu() const;
 
-    void GradStep( float learningRate ) override;
+    void GradStep( float learningRate, size_t neurons, size_t inputSynapses, size_t inputActiveSynapses ) override;
 
     void SetSigmaMu( float sigmaMu );
 

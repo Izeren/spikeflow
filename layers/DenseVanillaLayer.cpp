@@ -54,16 +54,17 @@ ILayer &DenseVanillaLayer::ResetGrad()
 }
 
 ILayer &
-DenseVanillaLayer::GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput )
+DenseVanillaLayer::GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput,
+                             float LAMBDA, bool isOutput )
 {
     auto batchFSize = static_cast<float>( batchSize );
     for ( auto neuron: neurons ) {
-        neuron->GradStep( isInput ? 0 : learningRateV / batchFSize );
+        neuron->GradStep( isInput ? 0 : learningRateV / batchFSize, 0, 0, 0 );
         const ISynapses &synapses = neuron->GetOutputSynapses();
         for ( auto synapse: synapses ) {
             if ( synapse->IsUpdatable()) {
                 stats.gradW.Add( synapse->GetGrad() / batchFSize );
-                synapse->GradStep( learningRateW / batchFSize );
+                synapse->GradStep( learningRateW / batchFSize, 0, 0, 0 );
             }
         }
     }
@@ -81,7 +82,7 @@ ILayer &DenseVanillaLayer::Backward( const std::vector<float> &deltas )
         if ( !deltas.empty()) {
             delta = deltas[idx];
         }
-        neurons[idx]->Backward( totalLayerOutput, delta );
+        neurons[idx]->Backward( totalLayerOutput, delta, 0, 0, 0 );
     }
     return *this;
 }

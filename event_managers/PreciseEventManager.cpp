@@ -4,7 +4,7 @@
 #include <iostream>
 
 void UpdateInductions( INeuron &neuron ) {
-    float SPACE_POTETIAL_FACTOR = 0.0f;
+    float SPACE_POTETIAL_FACTOR = 0.01f;
     for ( auto neighbour: neuron.neighbours ) {
         neighbour.second->SetInduced( neuron.GetPotential() * SPACE_POTETIAL_FACTOR / neighbour.first );
     }

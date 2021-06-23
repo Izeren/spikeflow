@@ -39,6 +39,7 @@ ILayer &DenseLifLayer::Relax( SPIKING_NN::Time time )
 
 ILayer &DenseLifLayer::LogBasicStats()
 {
+    stats.synapseWeight.SetRef( 1.f / neurons.size());
     for ( auto neuron : neurons ) {
         stats.neuronMPMax.Add( neuron->GetMaxMP());
         stats.neuronMP.Add( neuron->GetPotential());
@@ -74,44 +75,45 @@ ILayer &DenseLifLayer::ResetGrad()
     return *this;
 }
 
-ILayer &DenseLifLayer::GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput )
+ILayer &DenseLifLayer::GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput,
+                                 float LAMBDA, bool isOutput )
 {
-    float N = GetSize(), M = 0, m = 0;
-//    int N2 = layer[0].get()->outputSynapses.size();
-//    if ( N2 == 0 ) {
-//        N2 = 1;
-//    }
     float S = 0;
     for ( auto neuron: neurons ) {
         for ( auto synapse: neuron->GetOutputSynapses()) {
             if ( synapse ) {
                 if ( neuron->GetOutput() > 0 ) {
-                    m += 1;
                     S += synapse->GetStrength() * synapse->GetStrength();
                 }
-                M += 1;
             }
         }
     }
-    S = BETA * ( S - 1 );
-    float F = exp( S );
-    if ( m == 0 ) {
-        m = 1;
+    // Don't need to check for output layer. It doesn't have any weights
+    float weightNormFactor = BETA * LAMBDA * exp( BETA * ( S / neurons.size() - 1. ));
+    size_t activeNeurons = 0;
+    for ( auto neuron: neurons ) {
+        activeNeurons += neuron->GetOutputSpikeCounter() > 0;
     }
-    if ( M == 0 ) {
-        M = 1;
-    }
-//    int M = 1, N = 1, m = 1;
     auto batchFSize = static_cast<float>( batchSize );
+    stats.gradW.SetRef( 1.f / neurons.size());
+    stats.gradV.SetRef( 1.f / neurons.size());
     for ( auto neuron: neurons ) {
         // TODO: fix to real DLDV grad
         stats.gradV.Add( neuron->GetGrad() / batchFSize );
-        neuron->GradStep( isInput ? 0 : learningRateV / batchFSize );
+        size_t inputActiveSynapses = 0;
+        for ( auto synapse: neuron->GetInputSynapses()) {
+            inputActiveSynapses += synapse->GetPreSynapticNeuron()->GetOutputSpikeCounter() > 0;
+        }
+        neuron->GradStep(
+                isInput ? 0 : learningRateV / batchFSize,
+                neurons.size(),
+                neuron->GetInputSynapses().size(),
+                inputActiveSynapses );
         const ISynapses &synapses = neuron->GetOutputSynapses();
         for ( auto synapse: synapses ) {
             if ( synapse->IsUpdatable()) {
                 stats.gradW.Add( synapse->GetGrad() / batchFSize );
-                synapse->GradStep( learningRateW / batchFSize );
+                synapse->GradStep( learningRateW / batchFSize, activeNeurons, synapses.size(), weightNormFactor );
             }
         }
     }
@@ -121,15 +123,21 @@ ILayer &DenseLifLayer::GradStep( size_t batchSize, float learningRateV, float le
 ILayer &DenseLifLayer::Backward( const std::vector<float> &deltas )
 {
     float totalLayerOutput = 0;
+    size_t activeNeurons = 0;
+    float meanReversedSquaredThresholds = 0;
     for ( auto neuron: neurons ) {
         totalLayerOutput += neuron->GetOutput();
+        activeNeurons += neuron->GetOutputSpikeCounter() > 0;
+        meanReversedSquaredThresholds += 1. / neuron->GetMaxMP() / neuron->GetMaxMP();
     }
+    meanReversedSquaredThresholds = sqrt( 1. * meanReversedSquaredThresholds / neurons.size() );
+
     for ( int idx = 0; idx < GetSize(); ++idx ) {
         float delta = 0;
         if ( !deltas.empty()) {
             delta = deltas[idx];
         }
-        neurons[idx]->Backward( totalLayerOutput, delta );
+        neurons[idx]->Backward( totalLayerOutput, delta, meta.size, activeNeurons, meanReversedSquaredThresholds );
     }
     return *this;
 }

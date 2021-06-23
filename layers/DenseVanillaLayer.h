@@ -20,7 +20,8 @@ public:
     ILayer &ResetGrad() override;
 
     ILayer &
-    GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput ) override;
+    GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput,
+              float LAMBDA, bool isOutput ) override;
 
     ILayer &Backward( const std::vector<float> &deltas ) override;
 

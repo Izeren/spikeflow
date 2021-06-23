@@ -3,6 +3,7 @@
 #include <IrisUtils.h>
 #include <DataCommon.h>
 #include <iostream>
+#include <fstream>
 #include <LifNeuronBuilder.h>
 #include <LifSynapseBuilder.h>
 #include <PreciseEventManager.h>
@@ -37,6 +38,68 @@ float SoftMaxLoss( const std::vector<float> &output, SPIKING_NN::Target classId,
     return -loss;
 }
 
+typedef struct {
+    float accuracy;
+    float meanLoss;
+    float meanSquaredLoss;
+} EvalResult;
+
+float
+NormedCustomLoss( const std::vector<INeuron *> &outputNeurons, SPIKING_NN::Target classId, std::vector<float> &deltas )
+{
+    float loss = 0;
+    size_t maxSpikes = 0;
+    for ( auto neuron: outputNeurons ) {
+        if ( neuron->GetOutputSpikeCounter() > maxSpikes ) {
+            maxSpikes = neuron->GetOutputSpikeCounter();
+        }
+    }
+    size_t nonZeroDeltas = 0;
+    for ( int neuronId = 0; neuronId < outputNeurons.size(); neuronId++ ) {
+        INeuron *neuron = outputNeurons[neuronId];
+        auto target = static_cast<float>( abs( classId - neuronId ) < SPIKING_NN::EPS );
+        float output = maxSpikes ? static_cast<float>(neuron->GetOutputSpikeCounter()) / maxSpikes : 0;
+        deltas.emplace_back( output - target );
+        nonZeroDeltas += abs( deltas.back()) > SPIKING_NN::EPS;
+    }
+    if ( nonZeroDeltas ) {
+        for ( int neuronId = 0; neuronId < outputNeurons.size(); neuronId++ ) {
+            deltas[neuronId] = deltas[neuronId] / sqrt( nonZeroDeltas );
+            loss += 0.5 * ( deltas[neuronId] * deltas[neuronId] );
+        }
+    }
+    return -loss;
+}
+
+
+float
+NormedCustomLoss2( const std::vector<INeuron *> &outputNeurons, SPIKING_NN::Target classId, std::vector<float> &deltas )
+{
+    float loss = 0;
+    size_t maxSpikes = 0;
+    float s = 0;
+    for ( auto neuron: outputNeurons ) {
+        if ( neuron->GetOutputSpikeCounter() > maxSpikes ) {
+            maxSpikes = neuron->GetOutputSpikeCounter();
+        }
+    }
+    for ( int neuronId = 0; neuronId < outputNeurons.size(); neuronId++ ) {
+        INeuron *neuron = outputNeurons[neuronId];
+        auto target = static_cast<float>( abs( classId - neuronId ) < SPIKING_NN::EPS );
+        float output = maxSpikes ? static_cast<float>(neuron->GetOutputSpikeCounter()) / maxSpikes : 0;
+        deltas.emplace_back( output - target );
+        s += deltas.back() * deltas.back();
+    }
+    s = sqrt( s );
+    if ( s > SPIKING_NN::EPS ) {
+        for ( int neuronId = 0; neuronId < outputNeurons.size(); neuronId++ ) {
+            deltas[neuronId] = deltas[neuronId] / s;
+            loss += 0.5 * ( deltas[neuronId] * deltas[neuronId] );
+        }
+    }
+    return -loss;
+}
+
 // TODO: move to some utils
 size_t GetClassPrediction( const std::vector<float> &output )
 {
@@ -49,6 +112,40 @@ size_t GetClassPrediction( const std::vector<float> &output )
         }
     }
     return maxO > 0 ? maxId : -1;
+}
+
+EvalResult EvalModel( IDenseNetwork *network, std::vector<SPIKING_NN::SpikeTrain> &data,
+                      std::vector<SPIKING_NN::Target> &target, float
+                      simulationTime, float
+                      eps,
+                      std::string &logsPath )
+{
+    float totalLoss = 0;
+    float guesses = 0;
+    float squaredLossSum = 0;
+    std::ofstream out;
+    out.open( logsPath );
+
+    for ( int sampleId = 0; sampleId < data.size(); sampleId++ ) {
+        std::vector<float> output = network->Forward( data[sampleId], simulationTime, false );
+        if (( sampleId + 1 ) % 1000 == 0 ) {
+            std::cout << sampleId + 1 << " / " << data.size() << " samples has been forwarded" << std::endl;
+        }
+
+        std::vector<float> deltas;
+        std::vector<float> softMax;
+        float S = 0;
+        float loss = SoftMaxLoss( output, target[sampleId], softMax, deltas, &S );
+        out << loss << ",";
+        totalLoss += loss;
+        squaredLossSum += loss * loss;
+        int predictedClassId = GetClassPrediction( output );
+        int guess = abs((float) predictedClassId - target[sampleId] ) < eps;
+        guesses += guess;
+        network->Reset();
+    }
+    out.close();
+    return {guesses / data.size(), totalLoss / data.size(), squaredLossSum / data.size()};
 }
 
 void DemoScripts::TrainVanillaIris( char *path, std::default_random_engine &generator )
@@ -100,9 +197,9 @@ void DemoScripts::TrainVanillaIris( char *path, std::default_random_engine &gene
 
             output.Backward( deltas ), hidden.Backward( {} ), input.Backward( {} );
 
-            output.GradStep( 1, LEARNING_RATE, LEARNING_RATE, 0, false );
-            hidden.GradStep( 1, LEARNING_RATE, LEARNING_RATE, 0, false );
-            input.GradStep( 1, LEARNING_RATE, LEARNING_RATE, 0, true );
+            output.GradStep( 1, LEARNING_RATE, LEARNING_RATE, 0, false, 0, false );
+            hidden.GradStep( 1, LEARNING_RATE, LEARNING_RATE, 0, false, 0, false );
+            input.GradStep( 1, LEARNING_RATE, LEARNING_RATE, 0, true, 0, false );
 
             output.ResetPotentials().ResetGrad().ResetStats();
             hidden.ResetPotentials().ResetGrad().ResetStats();
@@ -115,19 +212,18 @@ void DemoScripts::TrainVanillaIris( char *path, std::default_random_engine &gene
 void DemoScripts::TrainSpikingIris( char *path, std::default_random_engine &generator )
 {
     float EPS = 1e-1;
-    float LEARNING_RATE_V = 0.00000;
+    float LEARNING_RATE_V = 0.000001;
     float LEARNING_RATE_W = 0.00001;
-    float SIMULATION_TIME = 100;
+    float SIMULATION_TIME = 200;
 
     size_t IRIS_INPUT = 4;
-    size_t IRIS_HIDDEN = 5;
-    size_t IRIS_HIDDEN_2 = 5;
     size_t IRIS_OUTPUT = 3;
 
-    int BATCH_SIZE = 20;
+    int BATCH_SIZE = 1;
 
     const float ALPHA = 0.05;
     const float BETA = 10;
+    const float LAMBDA = 0.0001;
 
 
     std::vector<ILayer *> layers;
@@ -138,21 +234,20 @@ void DemoScripts::TrainSpikingIris( char *path, std::default_random_engine &gene
 
 
     std::vector<LayerMeta> layersMeta = {
-            {5,   "input",   IRIS_INPUT,    neuronBuilder, 1,   0},
-            {1,   "hidden1", IRIS_HIDDEN,   neuronBuilder, 2,   1},
-            {1,   "hidden2", IRIS_HIDDEN_2, neuronBuilder, 2,   1},
-            {0.1, "output",  IRIS_OUTPUT,   neuronBuilder, 0.5, 1}
+            {1,   "input",   IRIS_INPUT,  neuronBuilder, 1,   0},
+            {1,   "hidden2", 6,           neuronBuilder, 2,   1},
+            {0.5, "output",  IRIS_OUTPUT, neuronBuilder, 0.5, 1}
     };
 
     auto network = IDenseNetworkBuilder().Build( layersMeta, synapseBuilder, layerBuilder, eventManager,
-                                                 generator, 1.25 * 1.25 );
+                                                 generator, 0 );
 
     SPIKING_NN::Dataset rawData;
     SPIKING_NN::SpikeTrainDataset data;
     IRIS::ReadIris( path, rawData, 0 );
     DATA_CONVERSION::ConvertDataToSpikeTrains( rawData, data, generator, SIMULATION_TIME );
 
-    for ( int epochId = 0; epochId < 1000; epochId++ ) {
+    for ( int epochId = 0; epochId < 100; epochId++ ) {
         float totalLoss = 0.f;
         int silentSamples = 0;
         int guesses = 0;
@@ -167,9 +262,7 @@ void DemoScripts::TrainSpikingIris( char *path, std::default_random_engine &gene
             std::vector<float> output = network->Forward( data.xTrain[sampleId], SIMULATION_TIME, false );
 
             std::vector<float> deltas;
-            std::vector<float> softMax;
-            float S = 0;
-            float loss = SoftMaxLoss( output, data.yTrain[sampleId], softMax, deltas, &S );
+            float loss = NormedCustomLoss2( network->GetOutputNeurons(), data.yTrain[sampleId], deltas );
             totalLoss += loss;
             int predictedClassId = GetClassPrediction( output );
             silentSamples += predictedClassId == -1 ? 1 : 0;
@@ -185,7 +278,7 @@ void DemoScripts::TrainSpikingIris( char *path, std::default_random_engine &gene
             network->Backward( deltas );
 
             if (( sampleId + 1 ) % BATCH_SIZE == 0 ) {
-                network->GradStep( BATCH_SIZE, LEARNING_RATE_V, LEARNING_RATE_W, BETA );
+                network->GradStep( BATCH_SIZE, LEARNING_RATE_V, LEARNING_RATE_W, BETA, LAMBDA );
             }
             network->Reset();
         }
@@ -225,14 +318,16 @@ void DemoScripts::RunDummyModel()
 }
 
 void
-DemoScripts::TrainSpikingDigits( const char *trainPath, const char *valPath, std::default_random_engine &generator )
+DemoScripts::TrainSpikingDigits( const char *trainPath, const char *valPath, std::default_random_engine &generator,
+                                 const char *logsPath )
 {
     float EPS = 1e-1;
-    float LEARNING_RATE_V = 0.00000;
+    float LEARNING_RATE_V = 0.00001;
     float LEARNING_RATE_W = 0.00001;
-    float SIMULATION_TIME = 100;
-    int BATCH_SIZE = 20;
+    float SIMULATION_TIME = 75;
+    int BATCH_SIZE = 1;
     const float BETA = 10;
+    const float LAMBDA = 0.0005;
     std::vector<ILayer *> layers;
     LifSynapseBuilder synapseBuilder = LifSynapseBuilder( generator );
     LifNeuronBuilder neuronBuilder = LifNeuronBuilder();
@@ -240,15 +335,18 @@ DemoScripts::TrainSpikingDigits( const char *trainPath, const char *valPath, std
     PreciseEventManager eventManager = PreciseEventManager();
 
     std::vector<LayerMeta> layersMeta = {
-            {5,   "input",   64, neuronBuilder, 1},
-            {1,   "hidden2", 10, neuronBuilder, 1},
-            {0.1, "output",  10, neuronBuilder, 1}
+            {5,    "input",   64, neuronBuilder, 8, 10},
+            {0.5,  "hidden2", 15, neuronBuilder, 4, 10},
+            {1.83, "output",  10, neuronBuilder, 3, 10}
     };
 
     std::cout << "Meta is ready, building network\n";
+    float linearDist = 1.2;
     auto network = IDenseNetworkBuilder().Build( layersMeta, synapseBuilder, layerBuilder, eventManager,
-                                                 generator, 0 );
+                                                 generator, linearDist );
     std::cout << "Network has been built loading the dataset\n";
+    std::cout << "Number of effective spatial connections inside layers: " << network->sInConnections << "\n";
+    std::cout << "Number of effective spatial connections between layers: " << network->sBetweenConnections << "\n";
 
     SPIKING_NN::Dataset rawData;
     SPIKING_NN::SpikeTrainDataset data;
@@ -257,7 +355,7 @@ DemoScripts::TrainSpikingDigits( const char *trainPath, const char *valPath, std
     DATA_CONVERSION::ConvertDataToSpikeTrains( rawData, data, generator, SIMULATION_TIME );
     std::cout << "Dataset has been converted to spikes\n";
 
-    for ( int epochId = 0; epochId < 1000; epochId++ ) {
+    for ( int epochId = 0; epochId < 20; epochId++ ) {
         float totalLoss = 0.f;
         int silentSamples = 0;
         int guesses = 0;
@@ -265,7 +363,7 @@ DemoScripts::TrainSpikingDigits( const char *trainPath, const char *valPath, std
         for ( int sampleId = 0; sampleId < data.xTrain.size(); sampleId++ ) {
             std::vector<float> output = network->Forward( data.xTrain[sampleId], SIMULATION_TIME, false );
             if (( sampleId + 1 ) % 1000 == 0 ) {
-                std::cout << sampleId + 1 << " / " << data.xTrain.size() << " samples has been forwarded\n";
+                std::cout << sampleId + 1 << " / " << data.xTrain.size() << " samples has been forwarded" << std::endl;
             }
 
             std::vector<float> deltas;
@@ -281,15 +379,30 @@ DemoScripts::TrainSpikingDigits( const char *trainPath, const char *valPath, std
             network->Backward( deltas );
 
             if (( sampleId + 1 ) % BATCH_SIZE == 0 ) {
-                network->GradStep( BATCH_SIZE, LEARNING_RATE_V, LEARNING_RATE_W, BETA );
+                network->GradStep( BATCH_SIZE, LEARNING_RATE_V, LEARNING_RATE_W, BETA, LAMBDA );
             }
             network->Reset();
         }
+        std::string trainLogsPath = std::string( logsPath ) + "/train_spatial_dist_" + std::to_string( linearDist ) +
+                                    "_epoch_" + std::to_string( epochId );
+        std::string testLogsPath = std::string( logsPath ) + "/test_spatial_dist_" + std::to_string( linearDist ) +
+                                   "_epoch_" + std::to_string( epochId );
+
+        auto trainEval = EvalModel( network, data.xTrain, data.yTrain, SIMULATION_TIME, EPS, trainLogsPath );
+        auto testEval = EvalModel( network, data.xTest, data.yTest, SIMULATION_TIME, EPS, testLogsPath );
+
         std::cout << "Loss for epoch: " << std::setw( 3 ) << epochId << " is: ";
-        std::cout << std::fixed << std::setprecision( 5 ) << std::setw( 9 ) << totalLoss / data.xTrain.size() << " ";
-        std::cout << "Accuracy: " << (float) guesses / data.xTrain.size() << " ";
+        std::cout << std::fixed << std::setprecision( 5 ) << std::setw( 9 ) << trainEval.meanLoss << " ";
+        std::cout << "Accuracy: " << trainEval.accuracy << " Train meanSquaredLoss: " << trainEval.meanSquaredLoss
+                  << "\n";
         std::cout << "Silent samples: " << std::setw( 3 ) << silentSamples << " | ";
         std::cout << network->GetStringStats();
+        std::cout << std::endl;
+
+        std::cout << "Test loss for epoch: " << std::setw( 3 ) << epochId << " is: ";
+        std::cout << std::fixed << std::setprecision( 5 ) << std::setw( 9 ) << testEval.meanLoss << " ";
+        std::cout << "Test accuracy: " << testEval.accuracy << " Test meanSquaredLoss: " << testEval.meanSquaredLoss
+                  << "\n";
         network->ResetStats();
     }
     delete network;

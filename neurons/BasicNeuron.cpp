@@ -38,7 +38,8 @@ BasicNeuron::BasicNeuron()
 
 void BasicNeuron::RelaxOutput( SPIKING_NN::Time time, bool withSpike ) { }
 
-void BasicNeuron::Backward( float layerTotalOutput, float delta )
+void BasicNeuron::Backward( float sumOutput, float delta, size_t totalNeurons, size_t activeNeurons,
+                            float meanReversedSquaredThresholds )
 {
     if ( outputSynapses.empty()) {
         grad = delta;
@@ -64,7 +65,7 @@ float BasicNeuron::GetGrad() const
     return grad;
 }
 
-void BasicNeuron::GradStep( float learningRate )
+void BasicNeuron::GradStep( float learningRate, size_t neurons, size_t inputSynapses, size_t inputActiveSynapses )
 {
     // Does nothing cause we don't have neuron based dynamic parameters
 }

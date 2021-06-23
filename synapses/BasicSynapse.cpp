@@ -20,7 +20,7 @@ void BasicSynapse::RegisterPreSynapticSpike( SPIKING_NN::Time time ) { }
 
 void BasicSynapse::RegisterPostSynapticSpike( SPIKING_NN::Time time ) { }
 
-void BasicSynapse::GradStep( float learningRateV )
+void BasicSynapse::GradStep( float learningRateV, size_t activeNeurons, size_t nextLayerSize, float weightNormFactor )
 {
     strength -= grad * learningRateV;
 }

@@ -25,7 +25,8 @@ public:
     virtual ILayer &ResetGrad() = 0;
 
     virtual ILayer &
-    GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput ) = 0;
+    GradStep( size_t batchSize, float learningRateV, float learningRateW, float BETA, bool isInput,
+              float LAMBDA, bool isOutput ) = 0;
 
     virtual ILayer &Backward( const std::vector<float> &deltas ) = 0;
 

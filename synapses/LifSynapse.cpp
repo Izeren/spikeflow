@@ -40,10 +40,11 @@ void LifSynapse::RegisterPostSynapticSpike( SPIKING_NN::Time time )
     ISynapse::RegisterPostSynapticSpike( time );
 }
 
-void LifSynapse::GradStep( float learningRateV )
+void LifSynapse::GradStep( float learningRateV, size_t activeNeurons, size_t nextLayerSize, float weightNormFactor )
 {
-    strength -= batchDlDw * learningRateV; // * sqrt(N / m);
-//    synapses[synapseId].strength -= BETA * LAMBDA * synapses[synapseId].strength * F;
+    float gradNormFactor = activeNeurons ? sqrt( nextLayerSize / activeNeurons ) : 0;
+    strength -= batchDlDw * learningRateV * gradNormFactor;
+    strength -= strength * weightNormFactor;
 }
 
 void LifSynapse::Backward( float potential )

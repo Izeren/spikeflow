@@ -24,6 +24,10 @@ public:
 
     void Reset();
 
+    void SetRef( T ref );
+
+    T GetRef( ) const;
+
     template<typename M>
     friend std::ostream &operator<<( std::ostream &out, const Stat<M> &stat );
 
@@ -32,6 +36,7 @@ private:
     T sumOfSquares;
     T maxValue;
     T minValue;
+    T ref;
     size_t cnt;
 };
 
@@ -77,6 +82,18 @@ T Stat<T>::GetMax() const
 }
 
 template<typename T>
+T Stat<T>::GetRef() const
+{
+    return ref;
+}
+
+template<typename T>
+void Stat<T>::SetRef( T ref )
+{
+    this->ref = ref;
+}
+
+template<typename T>
 size_t Stat<T>::GetCnt() const
 {
     return cnt;
@@ -100,6 +117,7 @@ std::ostream &operator<<( std::ostream &out, const Stat<M> &stat )
     out << std::fixed << std::setprecision( defPrecision ) << std::setfill( ' ' ) << std::setw( defWidth );
     out << "range: [" << std::setw( defWidth ) << stat.GetMin() << " " << stat.GetMax();
     out << "], mean: " << stat.GetMean() << ", cnt: " << stat.GetCnt();
-    return out << ", sumOfSquares: " << stat.GetMeanSquare();
+    out << ", sumOfSquares: " << stat.GetMeanSquare();
+    return out << ", ref: " << stat.GetRef();
 }
 

@@ -37,7 +37,7 @@ public:
 
     virtual ~ISynapse();
 
-    virtual void GradStep( float learningRateV ) = 0;
+    virtual void GradStep( float learningRateV, size_t activeNeurons, size_t nextLayerSize, float weightNormFactor ) = 0;
 
     virtual float GetGrad() const = 0;
 

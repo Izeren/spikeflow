@@ -8,5 +8,6 @@ public:
 
     void RunDummyModel();
 
-    void TrainSpikingDigits( const char *trainPath, const char *valPath, std::default_random_engine &generator );
+    void TrainSpikingDigits( const char *trainPath, const char *valPath, std::default_random_engine &generator, const
+    char *logsPath );
 };

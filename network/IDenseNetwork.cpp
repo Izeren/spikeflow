@@ -17,8 +17,10 @@ IDenseNetwork &IDenseNetwork::LogBasicStats()
     return *this;
 }
 
-IDenseNetwork::IDenseNetwork( std::vector<ILayer *> _layers, IEventManager &_eventManager ) : layers( std::move(
-        _layers )), eventManager( _eventManager ) { }
+IDenseNetwork::IDenseNetwork( std::vector<ILayer *> _layers, IEventManager &_eventManager,
+                              size_t sInConnections, size_t sBetweenConnections ) : layers( std::move(
+        _layers )), eventManager( _eventManager ), sInConnections( sInConnections ), sBetweenConnections(
+        sBetweenConnections ) { }
 
 IDenseNetwork &IDenseNetwork::Backward( const std::vector<float> &deltas )
 {
@@ -29,12 +31,13 @@ IDenseNetwork &IDenseNetwork::Backward( const std::vector<float> &deltas )
     return *this;
 }
 
-IDenseNetwork &IDenseNetwork::GradStep( size_t batchSize, float learningRateV, float learningRateW, float beta )
+IDenseNetwork &IDenseNetwork::GradStep( size_t batchSize, float learningRateV, float learningRateW, float beta,
+                                        float lambda )
 {
     for ( size_t ldx = layers.size() - 1; ldx > 0; --ldx ) {
-        layers[ldx]->GradStep( batchSize, learningRateV, learningRateW, beta, false );
+        layers[ldx]->GradStep( batchSize, learningRateV, learningRateW, beta, false, lambda, ldx == layers.size() - 1 );
     }
-    layers.front()->GradStep( batchSize, learningRateV, learningRateW, beta, true );
+    layers.front()->GradStep( batchSize, learningRateV, learningRateW, beta, true, lambda, false );
     for ( auto layer: layers ) {
         layer->ResetGrad();
     }
@@ -80,6 +83,11 @@ std::vector<float> IDenseNetwork::Forward( const SPIKING_NN::SpikeTrain &sample,
     return result;
 }
 
+std::vector<INeuron *> IDenseNetwork::GetOutputNeurons()
+{
+    return layers.back()->neurons;
+}
+
 float GetDist( INeuron &n1, INeuron &n2 )
 {
     return ( n1.x - n2.x ) * ( n1.x - n2.x )
@@ -87,8 +95,10 @@ float GetDist( INeuron &n1, INeuron &n2 )
            + ( n1.z - n2.z ) * ( n1.z - n2.z );
 }
 
-void BuildSpatialConnections( std::vector<ILayer *> &layers, float distLimitSquared )
+std::pair<size_t, size_t> BuildSpatialConnections( std::vector<ILayer *> &layers, float distLimitSquared )
 {
+    size_t sInConnections = 0;
+    size_t sBetweenConnections = 0;
     for ( size_t l1dx = 0; l1dx < layers.size(); ++l1dx ) {
         for ( size_t l2dx = 0; l2dx < layers.size(); ++l2dx ) {
             for ( size_t n1dx = 0; n1dx < layers[l1dx]->neurons.size(); ++n1dx ) {
@@ -102,11 +112,17 @@ void BuildSpatialConnections( std::vector<ILayer *> &layers, float distLimitSqua
                     if ( dist < distLimitSquared ) {
                         n1->neighbours.insert( std::make_pair( dist, n2 ));
                         n2->neighbours.insert( std::make_pair( dist, n1 ));
+                        if ( l1dx == l2dx ) {
+                            ++sInConnections;
+                        } else {
+                            ++sBetweenConnections;
+                        }
                     }
                 }
             }
         }
     }
+    return std::make_pair( sInConnections, sBetweenConnections );
 }
 
 IDenseNetwork *
@@ -114,6 +130,7 @@ IDenseNetworkBuilder::Build( const std::vector<LayerMeta> &layersMeta, const ISy
                              const ILayerBuilder &layerBuilder, IEventManager &eventManager,
                              std::default_random_engine &generator, float induceDistLimit ) const
 {
+    float squaredDistLimit = induceDistLimit * induceDistLimit;
     std::vector<ILayer *> layers;
     layers.resize( layersMeta.size());
     for ( int ldx = 0; ldx < layersMeta.size(); ++ldx ) {
@@ -129,6 +146,6 @@ IDenseNetworkBuilder::Build( const std::vector<LayerMeta> &layersMeta, const ISy
             layers[ldx]->BindWithNext( *layers[ldx + 1], synapseBuilder );
         }
     }
-    BuildSpatialConnections( layers, induceDistLimit );
-    return new IDenseNetwork( layers, eventManager );
+    auto sConnectionsInfo = BuildSpatialConnections( layers, squaredDistLimit );
+    return new IDenseNetwork( layers, eventManager, sConnectionsInfo.first, sConnectionsInfo.second );
 }
